@@ -1,0 +1,367 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Warm Pottery Color Palette */
+    --background: 30 30% 97%;
+    --foreground: 25 30% 15%;
+
+    --card: 30 25% 95%;
+    --card-foreground: 25 30% 15%;
+
+    --popover: 30 30% 97%;
+    --popover-foreground: 25 30% 15%;
+
+    /* Terracotta Primary */
+    --primary: 16 65% 50%;
+    --primary-foreground: 30 30% 97%;
+
+    /* Warm Cream Secondary */
+    --secondary: 35 30% 90%;
+    --secondary-foreground: 25 30% 20%;
+
+    /* Muted Earth Tones */
+    --muted: 30 20% 88%;
+    --muted-foreground: 25 15% 45%;
+
+    /* Clay Accent */
+    --accent: 25 45% 65%;
+    --accent-foreground: 30 30% 97%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 30 20% 85%;
+    --input: 30 20% 85%;
+    --ring: 16 65% 50%;
+
+    --radius: 0.75rem;
+
+    /* Custom Pottery Colors */
+    --terracotta: 16 65% 50%;
+    --terracotta-light: 16 55% 70%;
+    --terracotta-dark: 16 70% 35%;
+    --clay: 25 45% 65%;
+    --clay-light: 25 35% 80%;
+    --earth: 30 35% 25%;
+    --cream: 35 40% 95%;
+    --sand: 35 30% 85%;
+    --olive: 75 25% 35%;
+
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(30 30% 97%) 0%, hsl(35 35% 92%) 50%, hsl(25 25% 88%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(30 25% 97%) 0%, hsl(35 30% 94%) 100%);
+    --gradient-terracotta: linear-gradient(135deg, hsl(16 65% 50%) 0%, hsl(16 70% 40%) 100%);
+    --gradient-warm: linear-gradient(135deg, hsl(35 40% 95%) 0%, hsl(30 35% 90%) 100%);
+
+    /* Shadows */
+    --shadow-soft: 0 4px 20px -2px hsl(25 30% 20% / 0.08);
+    --shadow-medium: 0 8px 30px -4px hsl(25 30% 20% / 0.12);
+    --shadow-strong: 0 15px 50px -8px hsl(25 30% 20% / 0.18);
+    --shadow-glow: 0 0 40px hsl(16 65% 50% / 0.2);
+
+    --sidebar-background: 30 25% 95%;
+    --sidebar-foreground: 25 30% 20%;
+    --sidebar-primary: 16 65% 50%;
+    --sidebar-primary-foreground: 30 30% 97%;
+    --sidebar-accent: 35 30% 90%;
+    --sidebar-accent-foreground: 25 30% 20%;
+    --sidebar-border: 30 20% 85%;
+    --sidebar-ring: 16 65% 50%;
+  }
+
+  .dark {
+    --background: 25 30% 8%;
+    --foreground: 30 25% 92%;
+
+    --card: 25 28% 12%;
+    --card-foreground: 30 25% 92%;
+
+    --popover: 25 30% 8%;
+    --popover-foreground: 30 25% 92%;
+
+    --primary: 16 60% 55%;
+    --primary-foreground: 25 30% 8%;
+
+    --secondary: 25 25% 18%;
+    --secondary-foreground: 30 25% 92%;
+
+    --muted: 25 20% 20%;
+    --muted-foreground: 30 15% 60%;
+
+    --accent: 25 40% 45%;
+    --accent-foreground: 30 25% 92%;
+
+    --destructive: 0 65% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 25 20% 22%;
+    --input: 25 20% 22%;
+    --ring: 16 60% 55%;
+
+    --sidebar-background: 25 28% 10%;
+    --sidebar-foreground: 30 25% 92%;
+    --sidebar-primary: 16 60% 55%;
+    --sidebar-primary-foreground: 25 30% 8%;
+    --sidebar-accent: 25 25% 18%;
+    --sidebar-accent-foreground: 30 25% 92%;
+    --sidebar-border: 25 20% 22%;
+    --sidebar-ring: 16 60% 55%;
+    
+    --gradient-hero: linear-gradient(135deg, hsl(25 30% 8%) 0%, hsl(25 25% 12%) 50%, hsl(25 20% 22%) 100%);
+
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+@layer components {
+  /* Button Variants */
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-all duration-300;
+  }
+
+  .btn-outline {
+    @apply border-2 border-primary text-primary bg-transparent hover:bg-primary hover:text-primary-foreground transition-all duration-300;
+  }
+
+  .btn-ghost {
+    @apply text-foreground hover:bg-muted transition-all duration-200;
+  }
+
+  /* Card Styles */
+  .product-card {
+    @apply bg-card rounded-xl overflow-hidden transition-all duration-500 ease-out;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .product-card:hover {
+    box-shadow: var(--shadow-strong);
+    @apply -translate-y-2;
+  }
+
+  /* Navigation */
+  .nav-link {
+    @apply relative text-foreground/80 hover:text-primary transition-colors duration-300;
+  }
+
+  .nav-link::after {
+    content: '';
+    @apply absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-300;
+  }
+
+  .nav-link:hover::after {
+    @apply w-full;
+  }
+
+  /* Animations */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse-slow 4s ease-in-out infinite;
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s linear infinite;
+    background: linear-gradient(90deg, transparent 0%, hsl(var(--primary) / 0.1) 50%, transparent 100%);
+    background-size: 200% 100%;
+  }
+
+  /* Hero Section */
+  .hero-gradient {
+    background: var(--gradient-hero);
+  }
+
+  /* Pottery texture overlay */
+  .texture-overlay {
+    position: relative;
+  }
+
+  .texture-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.03;
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  /* Cart badge */
+  .cart-badge {
+    @apply absolute -top-2 -right-2 w-5 h-5 bg-primary text-primary-foreground text-xs font-semibold rounded-full flex items-center justify-center;
+    animation: pop 0.3s ease-out;
+  }
+
+  /* Image zoom on hover */
+  .image-zoom {
+    @apply overflow-hidden;
+  }
+
+  .image-zoom img {
+    @apply transition-transform duration-700 ease-out;
+  }
+
+  .image-zoom:hover img {
+    @apply scale-110;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+  }
+
+  .font-sans {
+    font-family: 'Outfit', system-ui, sans-serif;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .bg-gradient-warm {
+    background: var(--gradient-warm);
+  }
+
+  .bg-gradient-terracotta {
+    background: var(--gradient-terracotta);
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+
+  .shadow-medium {
+    box-shadow: var(--shadow-medium);
+  }
+
+  .shadow-strong {
+    box-shadow: var(--shadow-strong);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+}
+
+/* Keyframes */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0);
+  }
+  70% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-out-right {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  display: none;
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.5);
+}
+
+/* ==== SIDEBAR SCROLLBAR ONLY ==== */
+.sidebar-scroll::-webkit-scrollbar {
+  display: none;
+}
