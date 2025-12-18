@@ -24,11 +24,9 @@ import Checkout from "./pages/Checkout";
 
 const queryClient = new QueryClient();
 
-// Wrap Routes in a Layout component to attach a key per location
 const AppRoutes = () => {
-  const location = useLocation();
   return (
-    <Routes key={location.pathname + location.search}>
+    <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/shop" element={<Shop />} />
       <Route path="/categories" element={<Categories />} />
@@ -43,6 +41,7 @@ const AppRoutes = () => {
     </Routes>
   );
 };
+
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
