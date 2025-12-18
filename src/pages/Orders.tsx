@@ -25,7 +25,9 @@ import {
 import { supabase } from '@/lib/supabaseClient';
 
 // Types matching your DB mapping + UI
-type OrderStatus = 'pending' | 'paid' | 'shipped' | 'delivered' | 'cancelled';
+type OrderStatus = 'pending' | 'shipped' | 'delivered' | 'cancelled';
+type PaymentStatus = 'pending' | 'paid' | 'failed' | 'requires_action' | 'refunded';
+
 
 type OrderItem = {
     id: number;
@@ -42,7 +44,7 @@ type Order = {
     id: string;
     created_at: string;
     status: OrderStatus;
-    payment_status?: string;
+    payment_status: PaymentStatus;
     total_amount: number;
     currency: string;
     items: OrderItem[];
@@ -56,23 +58,17 @@ const statusConfig: Record<OrderStatus, { label: string; color: string; icon: an
         icon: Clock,
         step: 1,
     },
-    paid: {
-        label: 'Paid',
-        color: 'bg-blue-100 text-blue-700 border-blue-200',
-        icon: CheckCircle2,
-        step: 2,
-    },
     shipped: {
         label: 'Shipped',
         color: 'bg-indigo-100 text-indigo-700 border-indigo-200',
         icon: Truck,
-        step: 3,
+        step: 2,
     },
     delivered: {
         label: 'Delivered',
         color: 'bg-green-100 text-green-700 border-green-200',
         icon: CheckCircle2,
-        step: 4,
+        step: 3,
     },
     cancelled: {
         label: 'Cancelled',
@@ -81,6 +77,27 @@ const statusConfig: Record<OrderStatus, { label: string; color: string; icon: an
         step: 0,
     },
 };
+
+type UIStatus =
+    | { kind: 'payment'; label: string; color: string; icon: any }
+    | { kind: 'fulfillment'; label: string; color: string; icon: any; step: number };
+
+
+const resolvePaymentBadge = (payment_status: PaymentStatus): UIStatus => {
+    switch (payment_status) {
+        case 'paid':
+            return { kind: 'payment', label: 'Paid', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle2 };
+        case 'pending':
+            return { kind: 'payment', label: 'Payment Pending', color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock };
+        case 'failed':
+            return { kind: 'payment', label: 'Payment Failed', color: 'bg-red-100 text-red-800 border-red-200', icon: Package };
+        case 'refunded':
+            return { kind: 'payment', label: 'Refunded', color: 'bg-purple-100 text-purple-800 border-purple-200', icon: Package };
+        case 'requires_action':
+            return { kind: 'payment', label: 'Action Required', color: 'bg-orange-100 text-orange-800 border-orange-200', icon: Clock };
+    }
+};
+
 
 
 const Orders: React.FC = () => {
@@ -94,6 +111,39 @@ const Orders: React.FC = () => {
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [isAuthOpen, setIsAuthOpen] = useState(false);
     const displayOrderId = (id: string) => `ML-${id.slice(0, 8).toUpperCase()}`;
+
+    const loadRazorpay = (): Promise<boolean> => {
+        return new Promise((resolve) => {
+            if ((window as any).Razorpay) {
+                resolve(true);
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.async = true;
+
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+
+            document.body.appendChild(script);
+        });
+    };
+
+    const resolveUIStatus = (order: Order): UIStatus => {
+        if (order.payment_status !== 'paid') {
+            return resolvePaymentBadge(order.payment_status);
+        }
+
+        return {
+            kind: 'fulfillment',
+            ...statusConfig[order.status],
+        };
+    };
+
+
+
+
 
     // Format helpers
     const formatPrice = (price: number) =>
@@ -195,8 +245,8 @@ const Orders: React.FC = () => {
                 const finalOrders: Order[] = ordersRows.map((r) => ({
                     id: String(r.id),
                     created_at: r.created_at,
-                    status: r.status,
-                    payment_status: r.payment_status,
+                    status: r.status as OrderStatus,
+                    payment_status: r.payment_status as PaymentStatus,
                     total_amount: Number(r.total_amount),
                     currency: r.currency ?? 'INR',
                     items: itemsByOrder.get(String(r.id)) ?? [],
@@ -252,8 +302,16 @@ const Orders: React.FC = () => {
 
     // If a specific order is selected show details
     if (selectedOrder) {
-        const status = statusConfig[selectedOrder.status] ?? statusConfig['pending'];
+        const status = resolveUIStatus(selectedOrder);
         const StatusIcon = status.icon;
+        const paymentBadge = resolvePaymentBadge(selectedOrder.payment_status);
+        const PaymentIcon = paymentBadge.icon;
+
+        const canRetryPayment =
+            selectedOrder.payment_status === 'pending' &&
+            selectedOrder.status === 'pending';
+
+        const TOTAL_STEPS = 3;
 
         return (
             <div className="min-h-screen bg-background">
@@ -286,27 +344,32 @@ const Orders: React.FC = () => {
                                 </div>
 
                                 <CardContent className="p-6">
-                                    <div className="mb-8">
-                                        <div className="flex items-center justify-between relative">
-                                            <div className="absolute top-4 left-0 right-0 h-0.5 bg-muted" />
-                                            <div
-                                                className="absolute top-4 left-0 h-0.5 bg-primary transition-all duration-500"
-                                                style={{ width: `${((status.step - 1) / 3) * 100}%` }}
-
-                                            />
-                                            {['Placed', 'Paid', 'Shipped', 'Delivered'].map((step, i) => (
-                                                <div key={step} className="relative z-10 flex flex-col items-center">
+                                    {selectedOrder.payment_status === 'paid' && (
+                                        <div className="mb-8">
+                                            <div className="flex items-center justify-between relative">
+                                                <div className="absolute top-4 left-0 right-0 h-0.5 bg-muted" />
+                                                {status.kind === 'fulfillment' && (
                                                     <div
-                                                        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${i < status.step ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                                                            }`}
-                                                    >
-                                                        {i < status.step ? <CheckCircle2 className="w-5 h-5" /> : i + 1}
+                                                        className="absolute top-4 left-0 h-0.5 bg-primary transition-all duration-500"
+                                                        style={{ width: `${((status.step - 1) / (TOTAL_STEPS - 1)) * 100}%` }}
+                                                    />
+                                                )}
+                                                {['Placed', 'Shipped', 'Delivered'].map((step, i) => (
+                                                    <div key={step} className="relative z-10 flex flex-col items-center">
+                                                        {status.kind === 'fulfillment' && (
+                                                            <div
+                                                                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${i < status.step ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                                                                    }`}
+                                                            >
+                                                                {i < status.step ? <CheckCircle2 className="w-5 h-5" /> : i + 1}
+                                                            </div>
+                                                        )}
+                                                        <span className="mt-2 text-xs text-muted-foreground">{step}</span>
                                                     </div>
-                                                    <span className="mt-2 text-xs text-muted-foreground">{step}</span>
-                                                </div>
-                                            ))}
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="space-y-4">
@@ -329,15 +392,66 @@ const Orders: React.FC = () => {
 
                                         <div className="space-y-4">
                                             <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30">
-                                                <Truck className="w-5 h-5 text-primary mt-0.5" />
+                                                <PaymentIcon className="w-5 h-5 text-primary mt-0.5" />
                                                 <div>
                                                     <p className="text-sm text-muted-foreground">Payment status</p>
-                                                    <p className="font-medium capitalize">
-                                                        {selectedOrder.payment_status === 'paid' ? 'Paid' : selectedOrder.payment_status}
-                                                    </p>
+                                                    <Badge variant="outline" className={paymentBadge.color}>
+                                                        <PaymentIcon className="w-4 h-4 mr-2" />
+                                                        {paymentBadge.label}
+                                                    </Badge>
                                                 </div>
                                             </div>
                                         </div>
+                                        {canRetryPayment && (
+                                            <Button
+                                                className="mt-4 w-full"
+                                                onClick={async () => {
+                                                    try {
+                                                        const loaded = await loadRazorpay();
+                                                        if (!loaded) throw new Error('Razorpay failed to load');
+
+                                                        const session = await supabase.auth.getSession();
+                                                        const token = session.data.session?.access_token;
+
+                                                        const res = await fetch(
+                                                            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-razorpay-order`,
+                                                            {
+                                                                method: 'POST',
+                                                                headers: {
+                                                                    'Content-Type': 'application/json',
+                                                                    Authorization: `Bearer ${token}`,
+                                                                },
+                                                                body: JSON.stringify({ order_id: selectedOrder.id }),
+                                                            }
+                                                        );
+
+                                                        if (!res.ok) throw new Error('Failed to retry payment');
+
+                                                        const data = await res.json();
+
+                                                        const razorpay = new (window as any).Razorpay({
+                                                            key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+                                                            order_id: data.razorpay_order_id,
+                                                            amount: data.amount,
+                                                            currency: data.currency,
+                                                            name: 'Matica.life',
+                                                            description: 'Retry Order Payment',
+                                                            handler: async () => {
+                                                                // TODO: verify payment on backend
+                                                                setSelectedOrderId(null);
+                                                            },
+                                                        });
+
+                                                        razorpay.open();
+                                                    } catch (e) {
+                                                        console.error(e);
+                                                    }
+                                                }}
+                                            >
+                                                Retry Payment
+                                            </Button>
+                                        )}
+
                                     </div>
                                 </CardContent>
                             </Card>
@@ -411,8 +525,13 @@ const Orders: React.FC = () => {
                             <TabsTrigger value="cancelled" className="data-[state=active]:bg-background">Cancelled</TabsTrigger>
                         </TabsList>
 
-                        {(['all', 'pending', 'shipped', 'delivered'] as const).map((tab) => {
-                            const list = orders.filter((o) => tab === 'all' || o.status === tab);
+                        {(['all', 'pending', 'shipped', 'delivered', 'cancelled'] as const).map((tab) => {
+                            const list = orders.filter((o) => {
+                                if (tab === 'all') return true;
+                                if (tab === 'cancelled') return o.status === 'cancelled';
+                                return o.status === tab && o.payment_status === 'paid';
+                            });
+
                             return (
                                 <TabsContent key={tab} value={tab} className="space-y-4">
                                     {loading ? (
@@ -436,7 +555,9 @@ const Orders: React.FC = () => {
                                         </div>
                                     ) : (
                                         list.map((order) => {
-                                            const status = statusConfig[order.status] ?? statusConfig['pending'];
+
+                                            const status = resolveUIStatus(order);
+
                                             const StatusIcon = status.icon;
                                             return (
                                                 <Card key={order.id} className="border-border/50 hover:border-primary/30 transition-all cursor-pointer group" onClick={() => setSelectedOrderId(order.id)}>

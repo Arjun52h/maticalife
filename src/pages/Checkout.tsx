@@ -95,6 +95,80 @@ const Checkout: React.FC = () => {
         }
     };
 
+    const loadRazorpay = (): Promise<boolean> => {
+        return new Promise((resolve) => {
+            if ((window as any).Razorpay) {
+                resolve(true);
+                return;
+            }
+
+            const script = document.createElement("script");
+            script.src = "https://checkout.razorpay.com/v1/checkout.js";
+            script.async = true;
+
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+
+            document.body.appendChild(script);
+        });
+    };
+
+
+    const openRazorpay = async (orderId: string) => {
+        const loaded = await loadRazorpay();
+
+        if (!loaded) {
+            toast({
+                title: "Payment failed to load",
+                description: "Please check your connection and try again",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        const session = await supabase.auth.getSession();
+        const accessToken = session.data.session?.access_token;
+
+        const res = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-razorpay-order`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${accessToken}`,
+                },
+                body: JSON.stringify({ order_id: orderId }),
+            }
+        );
+
+        if (!res.ok) {
+            throw new Error("Failed to create Razorpay order");
+        }
+
+        const data = await res.json();
+
+        const options = {
+            key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+            amount: data.amount,
+            currency: data.currency,
+            order_id: data.razorpay_order_id,
+            name: "Matica.life",
+            description: "Order Payment",
+            handler: (response: any) => {
+                // DO NOT trust this yet (webhook will handle real success)
+                navigate("/orders");
+            },
+            theme: {
+                color: "#8B5E3C",
+            },
+        };
+
+        const razorpay = new (window as any).Razorpay(options);
+        razorpay.open();
+    };
+
+
+
     const handlePlaceOrder = async () => {
         if (!user?.id) {
             toast({
@@ -177,15 +251,33 @@ const Checkout: React.FC = () => {
             if (error) throw error;
 
             setOrderId(orderId);
+
+            // ORDER IS CREATED — CART MUST DIE HERE
             clearCart();
-            setOrderPlaced(true);
 
+            if (paymentMethod === "cod") {
+                setOrderPlaced(true);
+                return;
+            }
 
+            try {
+                await openRazorpay(orderId);
+            } catch (paymentError) {
+                console.error(paymentError);
+
+                toast({
+                    title: "Payment not completed",
+                    description: "You can retry payment from Orders page",
+                });
+
+                navigate("/orders");
+            }
         } catch (err) {
             console.error(err);
+
             toast({
-                title: "Order failed",
-                description: "Something went wrong while placing your order",
+                title: "Unable to place order",
+                description: "Please try again",
                 variant: "destructive",
             });
         } finally {
