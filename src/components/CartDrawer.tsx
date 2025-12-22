@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { useAuthModal } from '@/context/AuthModalContext';
 
 
 interface CartDrawerProps {
@@ -12,12 +13,14 @@ interface CartDrawerProps {
   onClose: () => void;
 }
 
-const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
+const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose, }) => {
   const { items, updateQuantity, removeFromCart, clearCart, totalPrice } = useCart();
 
   const shipping = totalPrice > 999 ? 0 : 99;
   const finalTotal = totalPrice + shipping;
   const { isAuthenticated } = useAuth();
+  const { openAuthModal } = useAuthModal();
+
   const navigate = useNavigate();
 
 
@@ -173,16 +176,19 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                 className="w-full btn-primary gap-2"
                 onClick={() => {
                   onClose();
+
                   if (!isAuthenticated) {
-                    navigate("/login", { state: { redirectTo: "/checkout" } });
+                    openAuthModal('login');
                     return;
                   }
+
                   navigate("/checkout");
                 }}
               >
                 Proceed to Checkout
                 <ArrowRight className="w-4 h-4" />
               </Button>
+
 
               <Button
                 variant="ghost"

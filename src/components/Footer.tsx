@@ -1,10 +1,45 @@
 import React from 'react';
+import { useState } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { Link } from 'react-router-dom';
-import { Mail, Phone, MapPin, Facebook, Instagram, Twitter, Youtube } from 'lucide-react';
+import { Mail, Phone, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { quickLinks, customerServiceLinks, legalLinks, socialLinks } from '@/config/footerLinks';
 
 const Footer: React.FC = () => {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const handleSubscribe = async () => {
+    if (!email || !email.includes('@')) {
+      setMessage('Please enter a valid email');
+      return;
+    }
+
+    setLoading(true);
+    setMessage(null);
+
+    const { error } = await supabase
+      .from('newsletter_subscribers')
+      .insert({ email });
+
+    if (error) {
+      if (error.code === '23505') {
+        setMessage('You are already subscribed 🙂');
+      } else {
+        setMessage('Something went wrong. Try again.');
+      }
+    } else {
+      setMessage('Subscribed successfully 🎉');
+      setEmail('');
+    }
+
+    setLoading(false);
+  };
+
+
   return (
     <footer className="bg-card border-t border-border">
       {/* Newsletter Section */}
@@ -17,16 +52,38 @@ const Footer: React.FC = () => {
             <p className="text-muted-foreground mb-6">
               Subscribe for exclusive offers, artisan stories, and new arrivals
             </p>
-            <div className="flex gap-3 max-w-md mx-auto">
-              <Input 
-                type="email" 
-                placeholder="Enter your email"
-                className="h-12 bg-background"
-              />
-              <Button className="btn-primary h-12 px-8">
-                Subscribe
-              </Button>
+            <div className="max-w-md mx-auto">
+              <div className="flex gap-3">
+                <Input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-12 bg-background"
+                />
+
+                <Button
+                  className="btn-primary h-12 px-8"
+                  onClick={handleSubscribe}
+                  disabled={loading}
+                >
+                  {loading ? 'Subscribing…' : 'Subscribe'}
+                </Button>
+              </div>
+
+              {message && (
+                <p
+                  className={`mt-3 text-sm text-center ${message.includes('success')
+                      ? 'text-green-600'
+                      : 'text-muted-foreground'
+                    }`}
+                >
+                  {message}
+                </p>
+
+              )}
             </div>
+
           </div>
         </div>
       </div>
@@ -48,19 +105,24 @@ const Footer: React.FC = () => {
               Bringing premium handcrafted artisan products to your home. Each piece tells a story of tradition and artistry.
             </p>
             <div className="flex gap-3">
-              <Button variant="outline" size="icon" className="rounded-full hover:bg-primary hover:text-primary-foreground hover:border-primary">
-                <Facebook className="w-4 h-4" />
-              </Button>
-              <Button variant="outline" size="icon" className="rounded-full hover:bg-primary hover:text-primary-foreground hover:border-primary">
-                <Instagram className="w-4 h-4" />
-              </Button>
-              <Button variant="outline" size="icon" className="rounded-full hover:bg-primary hover:text-primary-foreground hover:border-primary">
-                <Twitter className="w-4 h-4" />
-              </Button>
-              <Button variant="outline" size="icon" className="rounded-full hover:bg-primary hover:text-primary-foreground hover:border-primary">
-                <Youtube className="w-4 h-4" />
-              </Button>
+              {socialLinks.map(({ icon: Icon, href }) => (
+                <a
+                  key={href}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="rounded-full hover:bg-primary hover:text-primary-foreground hover:border-primary"
+                  >
+                    <Icon className="w-4 h-4" />
+                  </Button>
+                </a>
+              ))}
             </div>
+
           </div>
 
           {/* Quick Links */}
@@ -69,13 +131,10 @@ const Footer: React.FC = () => {
               Quick Links
             </h4>
             <ul className="space-y-3">
-              {['Shop All', 'New Arrivals', 'Best Sellers', 'Categories', 'Gift Cards'].map((link) => (
-                <li key={link}>
-                  <Link 
-                    to="/shop" 
-                    className="text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    {link}
+              {quickLinks.map(({ label, to }) => (
+                <li key={label}>
+                  <Link to={to} className="text-muted-foreground hover:text-primary">
+                    {label}
                   </Link>
                 </li>
               ))}
@@ -88,13 +147,10 @@ const Footer: React.FC = () => {
               Customer Service
             </h4>
             <ul className="space-y-3">
-              {['Contact Us', 'FAQs', 'Shipping Info', 'Returns & Exchange', 'Track Order'].map((link) => (
-                <li key={link}>
-                  <Link 
-                    to="/contact" 
-                    className="text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    {link}
+              {customerServiceLinks.map(({ label, to }) => (
+                <li key={label}>
+                  <Link to={to} className="text-muted-foreground hover:text-primary">
+                    {label}
                   </Link>
                 </li>
               ))}
@@ -135,10 +191,17 @@ const Footer: React.FC = () => {
               © 2024 Matica.life. All rights reserved. Made with ❤️ in India
             </p>
             <div className="flex gap-4 text-sm text-muted-foreground">
-              <Link to="/" className="hover:text-primary transition-colors">Privacy Policy</Link>
-              <Link to="/" className="hover:text-primary transition-colors">Terms of Service</Link>
-              <Link to="/" className="hover:text-primary transition-colors">Cookies</Link>
+              {legalLinks.map(({ label, to }) => (
+                <Link
+                  key={label}
+                  to={to}
+                  className="hover:text-primary transition-colors"
+                >
+                  {label}
+                </Link>
+              ))}
             </div>
+
           </div>
         </div>
       </div>
