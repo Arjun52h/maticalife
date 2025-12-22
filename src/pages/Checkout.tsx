@@ -7,10 +7,6 @@ import {
     Shield,
     Gift,
     Tag,
-    MapPin,
-    Phone,
-    Mail,
-    User,
     Check,
     ChevronRight,
     Sparkles,
@@ -34,6 +30,23 @@ import { useEffect } from "react";
 
 
 const Checkout: React.FC = () => {
+    type Address = {
+        id: number;
+        label: string;
+        full_name: string;
+        phone: string;
+        line1: string;
+        line2?: string | null;
+        city: string;
+        state: string;
+        postal_code: string;
+        is_default: boolean;
+    };
+
+    const [addresses, setAddresses] = useState<Address[]>([]);
+    const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
+    const [loadingAddresses, setLoadingAddresses] = useState(true);
+
     const navigate = useNavigate();
     const { items, totalPrice, clearCart } = useCart();
     const { isAuthenticated, user } = useAuth();
@@ -49,21 +62,9 @@ const Checkout: React.FC = () => {
     const [discount, setDiscount] = useState(0);
     const [orderId, setOrderId] = useState<string | null>(null);
 
-
     const [paymentMethod, setPaymentMethod] = useState('card');
 
-    const [formData, setFormData] = useState({
-        firstName: user?.name?.split(' ')[0] || '',
-        lastName: user?.name?.split(' ').slice(1).join(' ') || '',
-        email: user?.email || '',
-        phone: '',
-        address: '',
-        apartment: '',
-        city: '',
-        state: '',
-        pincode: '',
-        saveAddress: true
-    });
+    const selectedAddress = addresses.find(a => a.id === selectedAddressId);
 
     const shipping = totalPrice > 999 ? 0 : 99;
     const tax = Math.round(totalPrice * 0.05);
@@ -188,49 +189,13 @@ const Checkout: React.FC = () => {
 
         try {
             // 1️⃣ Address
-            let shippingAddressId: number;
-
-            const { data: existingAddress, error: addrSelectError } = await supabase
-                .from("addresses")
-                .select("id")
-                .eq("user_id", user.id)
-                .eq("is_default", true)
-                .maybeSingle();
-
-            if (addrSelectError) throw addrSelectError;
-
-            const addressPayload = {
-                user_id: user.id,
-                label: "Home",
-                full_name: `${formData.firstName} ${formData.lastName}`,
-                phone: formData.phone,
-                line1: formData.address,
-                line2: formData.apartment || null,
-                city: formData.city,
-                state: formData.state,
-                postal_code: formData.pincode,
-                country: "India",
-                is_default: true,
-                updated_at: new Date().toISOString(),
-            };
-
-            if (existingAddress?.id) {
-                const { error } = await supabase
-                    .from("addresses")
-                    .update(addressPayload)
-                    .eq("id", existingAddress.id);
-
-                if (error) throw error;
-                shippingAddressId = existingAddress.id;
-            } else {
-                const { data, error } = await supabase
-                    .from("addresses")
-                    .insert([{ ...addressPayload, created_at: new Date().toISOString() }])
-                    .select("id")
-                    .single();
-
-                if (error) throw error;
-                shippingAddressId = data.id;
+            if (!selectedAddressId) {
+                toast({
+                    title: "No address selected",
+                    description: "Please select a shipping address",
+                    variant: "destructive",
+                });
+                return;
             }
 
             const payload = items.map(item => ({
@@ -239,14 +204,15 @@ const Checkout: React.FC = () => {
             }));
 
             const { data: orderId, error } = await supabase.rpc(
-                'create_order_with_validation',
+                "create_order_with_validation",
                 {
                     p_user_id: user.id,
                     p_items: payload,
-                    p_shipping_address_id: shippingAddressId,
+                    p_shipping_address_id: selectedAddressId,
                     p_payment_method: paymentMethod,
                 }
             );
+
 
             if (error) throw error;
 
@@ -293,31 +259,30 @@ const Checkout: React.FC = () => {
     ];
 
     useEffect(() => {
-        const loadDefaultAddress = async () => {
+        const loadAddresses = async () => {
             if (!user?.id) return;
 
             const { data, error } = await supabase
                 .from("addresses")
                 .select("*")
                 .eq("user_id", user.id)
-                .eq("is_default", true)
-                .maybeSingle();
+                .eq("is_active", true)
+                .order("is_default", { ascending: false });
 
-            if (data) {
-                setFormData((prev) => ({
-                    ...prev,
-                    firstName: data.full_name?.split(" ")[0] || "",
-                    lastName: data.full_name?.split(" ").slice(1).join(" "),
-                    phone: data.phone || "",
-                    address: data.line1 || "",
-                    city: data.city || "",
-                    state: data.state || "",
-                    pincode: data.postal_code || "",
-                }));
+            if (error) {
+                toast({
+                    title: "Failed to load addresses",
+                    variant: "destructive",
+                });
+                return;
             }
+
+            setAddresses(data || []);
+            setSelectedAddressId(data?.[0]?.id ?? null);
+            setLoadingAddresses(false);
         };
 
-        loadDefaultAddress();
+        loadAddresses();
     }, [user?.id]);
 
 
@@ -375,7 +340,7 @@ const Checkout: React.FC = () => {
                             Order #ML{Date.now().toString().slice(-8)}
                         </p>
                         <p className="text-muted-foreground mb-8">
-                            We've sent a confirmation email to {formData.email || user?.email}
+                            We've sent a confirmation email to {user?.email}
                         </p>
                         <div className="bg-card rounded-2xl p-6 mb-8 shadow-soft">
                             <div className="flex items-center justify-between text-sm">
@@ -455,135 +420,87 @@ const Checkout: React.FC = () => {
                             {/* Step 1: Shipping */}
                             {currentStep === 1 && (
                                 <div className="animate-fade-in">
-                                    <div className="bg-card rounded-2xl p-6 sm:p-8 shadow-soft">
-                                        <div className="flex items-center gap-3 mb-6">
-                                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                                <Truck className="w-5 h-5 text-primary" />
-                                            </div>
-                                            <div>
-                                                <h2 className="font-display text-2xl font-semibold">Shipping Details</h2>
-                                                <p className="text-sm text-muted-foreground">Where should we deliver your order?</p>
-                                            </div>
-                                        </div>
+                                    <div className="bg-card rounded-2xl p-6 shadow-soft space-y-4">
+                                        <h2 className="font-display text-2xl font-semibold">Select Shipping Address</h2>
 
-                                        <div className="grid sm:grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="firstName" className="flex items-center gap-2">
-                                                    <User className="w-4 h-4 text-muted-foreground" />
-                                                    First Name
-                                                </Label>
-                                                <Input
-                                                    id="firstName"
-                                                    value={formData.firstName}
-                                                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                                                    placeholder="John"
-                                                    className="h-12"
-                                                />
+                                        {loadingAddresses ? (
+                                            <p className="text-muted-foreground">Loading addresses…</p>
+                                        ) : addresses.length === 0 ? (
+                                            <div className="text-center space-y-4">
+                                                <p className="text-muted-foreground">
+                                                    No saved addresses found.
+                                                </p>
+                                                <Button onClick={() => navigate("/addresses")}>
+                                                    Add Address
+                                                </Button>
                                             </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="lastName">Last Name</Label>
-                                                <Input
-                                                    id="lastName"
-                                                    value={formData.lastName}
-                                                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                                                    placeholder="Doe"
-                                                    className="h-12"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="email" className="flex items-center gap-2">
-                                                    <Mail className="w-4 h-4 text-muted-foreground" />
-                                                    Email
-                                                </Label>
-                                                <Input
-                                                    id="email"
-                                                    type="email"
-                                                    value={formData.email}
-                                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                                    placeholder="john@example.com"
-                                                    className="h-12"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="phone" className="flex items-center gap-2">
-                                                    <Phone className="w-4 h-4 text-muted-foreground" />
-                                                    Phone
-                                                </Label>
-                                                <Input
-                                                    id="phone"
-                                                    value={formData.phone}
-                                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                                    placeholder="+91 98765 43210"
-                                                    className="h-12"
-                                                />
-                                            </div>
-                                            <div className="sm:col-span-2 space-y-2">
-                                                <Label htmlFor="address" className="flex items-center gap-2">
-                                                    <MapPin className="w-4 h-4 text-muted-foreground" />
-                                                    Address
-                                                </Label>
-                                                <Input
-                                                    id="address"
-                                                    value={formData.address}
-                                                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                                    placeholder="123 Main Street"
-                                                    className="h-12"
-                                                />
-                                            </div>
-                                            <div className="sm:col-span-2 space-y-2">
-                                                <Label htmlFor="apartment">Apartment, suite, etc. (optional)</Label>
-                                                <Input
-                                                    id="apartment"
-                                                    value={formData.apartment}
-                                                    onChange={(e) => setFormData({ ...formData, apartment: e.target.value })}
-                                                    placeholder="Apt 4B"
-                                                    className="h-12"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="city">City</Label>
-                                                <Input
-                                                    id="city"
-                                                    value={formData.city}
-                                                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                                                    placeholder="Mumbai"
-                                                    className="h-12"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="state">State</Label>
-                                                <Input
-                                                    id="state"
-                                                    value={formData.state}
-                                                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                                                    placeholder="Maharashtra"
-                                                    className="h-12"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="pincode">PIN Code</Label>
-                                                <Input
-                                                    id="pincode"
-                                                    value={formData.pincode}
-                                                    onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
-                                                    placeholder="400001"
-                                                    className="h-12"
-                                                />
-                                            </div>
-                                        </div>
+                                        ) : (
+                                            <RadioGroup
+                                                value={String(selectedAddressId)}
+                                                onValueChange={(v) => setSelectedAddressId(Number(v))}
+                                                className="space-y-3"
+                                            >
+                                                {addresses.map((addr) => (
+                                                    <label
+                                                        key={addr.id}
+                                                        className={`block rounded-xl border p-4 cursor-pointer transition ${selectedAddressId === addr.id
+                                                            ? "border-primary bg-primary/5"
+                                                            : "border-border hover:border-primary/50"
+                                                            }`}
+                                                    >
+                                                        <div className="flex gap-3 items-start">
+                                                            <RadioGroupItem value={String(addr.id)} />
+                                                            <div>
+                                                                <p className="font-medium">
+                                                                    {addr.full_name} · {addr.label}
+                                                                </p>
+                                                                <p className="text-sm text-muted-foreground">
+                                                                    {addr.line1}
+                                                                    {addr.line2 && `, ${addr.line2}`}
+                                                                </p>
+                                                                <p className="text-sm text-muted-foreground">
+                                                                    {addr.city}, {addr.state} – {addr.postal_code}
+                                                                </p>
+                                                                <p className="text-sm text-muted-foreground">
+                                                                    {addr.phone}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </label>
+                                                ))}
+                                            </RadioGroup>
+                                        )}
 
-                                        <div className="mt-6 pt-6 border-t border-border">
+                                        <div className="pt-4 border-t flex gap-3">
                                             <Button
-                                                onClick={() => setCurrentStep(2)}
-                                                className="w-full btn-primary h-12 text-lg gap-2"
+                                                variant="outline"
+                                                onClick={() => navigate("/addresses")}
+                                                className="flex-1"
+                                            >
+                                                Manage Addresses
+                                            </Button>
+
+                                            <Button
+                                                className="flex-1 btn-primary"
+                                                onClick={() => {
+                                                    if (!selectedAddressId) {
+                                                        toast({
+                                                            title: "Select an address",
+                                                            description: "Please select a shipping address",
+                                                            variant: "destructive",
+                                                        });
+                                                        return;
+                                                    }
+                                                    setCurrentStep(2);
+                                                }}
                                             >
                                                 Continue to Payment
-                                                <ChevronRight className="w-5 h-5" />
                                             </Button>
                                         </div>
                                     </div>
                                 </div>
                             )}
+
 
                             {/* Step 2: Payment */}
                             {currentStep === 2 && (
@@ -720,23 +637,32 @@ const Checkout: React.FC = () => {
                             {currentStep === 3 && (
                                 <div className="animate-fade-in space-y-6">
                                     {/* Shipping Summary */}
-                                    <div className="bg-card rounded-2xl p-6 shadow-soft">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div className="flex items-center gap-3">
-                                                <Truck className="w-5 h-5 text-primary" />
-                                                <h3 className="font-display text-lg font-semibold">Shipping To</h3>
+                                    {selectedAddress && (
+                                        <div className="bg-card rounded-2xl p-6 shadow-soft">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <div className="flex items-center gap-3">
+                                                    <Truck className="w-5 h-5 text-primary" />
+                                                    <h3 className="font-display text-lg font-semibold">Shipping To</h3>
+                                                </div>
+                                                <Button variant="ghost" size="sm" onClick={() => setCurrentStep(1)}>
+                                                    Edit
+                                                </Button>
                                             </div>
-                                            <Button variant="ghost" size="sm" onClick={() => setCurrentStep(1)}>
-                                                Edit
-                                            </Button>
+
+                                            <div className="text-muted-foreground">
+                                                <p className="font-medium text-foreground">{selectedAddress.full_name}</p>
+                                                <p>
+                                                    {selectedAddress.line1}
+                                                    {selectedAddress.line2 && `, ${selectedAddress.line2}`}
+                                                </p>
+                                                <p>
+                                                    {selectedAddress.city}, {selectedAddress.state} – {selectedAddress.postal_code}
+                                                </p>
+                                                <p>{selectedAddress.phone}</p>
+                                            </div>
                                         </div>
-                                        <div className="text-muted-foreground">
-                                            <p className="font-medium text-foreground">{formData.firstName} {formData.lastName}</p>
-                                            <p>{formData.address}{formData.apartment && `, ${formData.apartment}`}</p>
-                                            <p>{formData.city}, {formData.state} - {formData.pincode}</p>
-                                            <p>{formData.phone}</p>
-                                        </div>
-                                    </div>
+                                    )}
+
 
                                     {/* Payment Summary */}
                                     <div className="bg-card rounded-2xl p-6 shadow-soft">

@@ -3,7 +3,6 @@ import { Link, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import {
   Star,
-  Heart,
   Truck,
   ShieldCheck,
   Package,
@@ -26,6 +25,10 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from '@/hooks/use-toast';
 
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabaseClient';
+import ProductReviews from '@/components/reviews/ProductReviews';
+
 
 const ProductDetail: React.FC = () => {
   const { id } = useParams();
@@ -36,6 +39,54 @@ const ProductDetail: React.FC = () => {
   const [quantity, setQuantity] = useState(1);
 
   const { data: product, isLoading } = useProduct(id);
+
+  const {
+    data: reviews = [],
+    isLoading: reviewsLoading,
+  } = useQuery({
+    queryKey: ['product-reviews', product?.id],
+    enabled: !!product?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('product_reviews')
+        .select(`
+        id,
+        rating,
+        title,
+        body,
+        created_at,
+        profiles (
+          full_name,
+          avatar
+        )
+      `)
+        .eq('product_id', product!.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const {
+    data: canReview,
+  } = useQuery({
+    queryKey: ['can-review', product?.id],
+    enabled: !!product?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc(
+        'can_user_review_product',
+        { p_product_id: product!.id }
+      );
+
+      if (error) return false;
+      return data === true;
+    },
+  });
+
+
+
   // --- IMAGE GALLERY STATE ---
   const galleryImages = product?.images?.length
     ? product.images
@@ -187,6 +238,9 @@ const ProductDetail: React.FC = () => {
     addToCart(product, quantity);
     setIsCartOpen(true);
   };
+
+  const productId = Number(product.id);
+
 
   return (
     <>
@@ -584,6 +638,13 @@ const ProductDetail: React.FC = () => {
               </div>
             </div>
           </section>
+
+          <ProductReviews
+            productId={productId}
+            reviews={reviews}
+            loading={reviewsLoading}
+            canReview={!!canReview}
+          />
 
           {/* Related products */}
           {relatedProducts.length > 0 && (

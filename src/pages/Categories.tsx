@@ -8,7 +8,6 @@ import Footer from "@/components/Footer";
 import CartDrawer from "@/components/CartDrawer";
 import AuthModal from "@/components/AuthModal";
 import { useCategories } from "@/hooks/useProducts";
-import { cn } from "@/lib/utils";
 
 const Categories: React.FC = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);

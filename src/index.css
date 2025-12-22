@@ -111,7 +111,7 @@
     --sidebar-accent-foreground: 30 25% 92%;
     --sidebar-border: 25 20% 22%;
     --sidebar-ring: 16 60% 55%;
-    
+
     --gradient-hero: linear-gradient(135deg, hsl(25 30% 8%) 0%, hsl(25 25% 12%) 50%, hsl(25 20% 22%) 100%);
 
   }
@@ -126,12 +126,18 @@
     @apply bg-background text-foreground font-sans antialiased;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-display;
   }
 }
 
 @layer components {
+
   /* Button Variants */
   .btn-primary {
     @apply bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5;
@@ -269,18 +275,24 @@
 
 /* Keyframes */
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-10px);
   }
 }
 
 @keyframes pulse-slow {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.7;
   }
@@ -290,6 +302,7 @@
   0% {
     background-position: -200% 0;
   }
+
   100% {
     background-position: 200% 0;
   }
@@ -299,9 +312,11 @@
   0% {
     transform: scale(0);
   }
+
   70% {
     transform: scale(1.2);
   }
+
   100% {
     transform: scale(1);
   }
@@ -312,6 +327,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -323,6 +339,7 @@
     opacity: 0;
     transform: translateX(100%);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -334,11 +351,34 @@
     opacity: 1;
     transform: translateX(0);
   }
+
   to {
     opacity: 0;
     transform: translateX(100%);
   }
 }
+
+@layer components {
+  .prose {
+    @apply leading-relaxed;
+  }
+
+  .prose p {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    /* 👈 THIS is the missing gap */
+  }
+
+  .prose h3 {
+    margin-top: 3rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .prose h3+p {
+    margin-top: 0;
+  }
+}
+
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {

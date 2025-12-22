@@ -40,6 +40,18 @@ type OrderItem = {
     subtotal: number;
 };
 
+type AddressSnapshot = {
+    label?: string | null;
+    full_name: string;
+    phone: string;
+    line1: string;
+    line2?: string | null;
+    city: string;
+    state: string;
+    postal_code: string;
+    country: string;
+};
+
 type Order = {
     id: string;
     created_at: string;
@@ -48,8 +60,9 @@ type Order = {
     total_amount: number;
     currency: string;
     items: OrderItem[];
-    shipping_address_id?: number | null;
+    shipping_address_snapshot: AddressSnapshot;
 };
+
 
 const statusConfig: Record<OrderStatus, { label: string; color: string; icon: any; step: number }> = {
     pending: {
@@ -111,6 +124,22 @@ const Orders: React.FC = () => {
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [isAuthOpen, setIsAuthOpen] = useState(false);
     const displayOrderId = (id: string) => `ML-${id.slice(0, 8).toUpperCase()}`;
+    const [returnModalOpen, setReturnModalOpen] = useState(false);
+    const [returnType, setReturnType] = useState<'return' | 'replacement' | null>(null);
+    const [returnReason, setReturnReason] = useState('');
+    const [returnOrderId, setReturnOrderId] = useState<string | null>(null);
+
+    const openReturnModal = (
+        type: 'return' | 'replacement',
+        orderId: string
+    ) => {
+        setReturnType(type);
+        setReturnReason('');
+        setReturnOrderId(orderId);
+        setReturnModalOpen(true);
+    };
+
+
 
     const loadRazorpay = (): Promise<boolean> => {
         return new Promise((resolve) => {
@@ -170,9 +199,18 @@ const Orders: React.FC = () => {
                 // 1) Fetch orders for user (select core fields)
                 const { data: ordersData, error: ordersError } = await supabase
                     .from('orders')
-                    .select('id, created_at, status, payment_status, total_amount, currency, shipping_address_id')
+                    .select(`
+        id,
+        created_at,
+        status,
+        payment_status,
+        total_amount,
+        currency,
+        shipping_address_snapshot
+    `)
                     .eq('user_id', user.id)
                     .order('created_at', { ascending: false });
+
 
                 if (ordersError) {
                     throw ordersError;
@@ -250,8 +288,9 @@ const Orders: React.FC = () => {
                     total_amount: Number(r.total_amount),
                     currency: r.currency ?? 'INR',
                     items: itemsByOrder.get(String(r.id)) ?? [],
-                    shipping_address_id: r.shipping_address_id ?? null,
+                    shipping_address_snapshot: r.shipping_address_snapshot,
                 }));
+
 
                 if (!mounted) return;
                 setOrders(finalOrders);
@@ -312,6 +351,12 @@ const Orders: React.FC = () => {
             selectedOrder.status === 'pending';
 
         const TOTAL_STEPS = 3;
+
+        const canRequestReturn =
+            selectedOrder.status === 'delivered' &&
+            selectedOrder.payment_status === 'paid';
+
+
 
         return (
             <div className="min-h-screen bg-background">
@@ -385,9 +430,25 @@ const Orders: React.FC = () => {
                                                 <MapPin className="w-5 h-5 text-primary mt-0.5" />
                                                 <div>
                                                     <p className="text-sm text-muted-foreground">Shipping Address</p>
-                                                    <p className="font-medium">{selectedOrder.shipping_address_id ? `Address #${selectedOrder.shipping_address_id}` : 'Not set'}</p>
+                                                    <p className="font-medium">
+                                                        {selectedOrder.shipping_address_snapshot.full_name}
+                                                    </p>
+                                                    <p className="text-sm">
+                                                        {selectedOrder.shipping_address_snapshot.line1}
+                                                        {selectedOrder.shipping_address_snapshot.line2 &&
+                                                            `, ${selectedOrder.shipping_address_snapshot.line2}`}
+                                                    </p>
+                                                    <p className="text-sm">
+                                                        {selectedOrder.shipping_address_snapshot.city},{" "}
+                                                        {selectedOrder.shipping_address_snapshot.state} –{" "}
+                                                        {selectedOrder.shipping_address_snapshot.postal_code}
+                                                    </p>
+                                                    <p className="text-sm">
+                                                        {selectedOrder.shipping_address_snapshot.phone}
+                                                    </p>
                                                 </div>
                                             </div>
+
                                         </div>
 
                                         <div className="space-y-4">
@@ -451,6 +512,29 @@ const Orders: React.FC = () => {
                                                 Retry Payment
                                             </Button>
                                         )}
+                                        {canRequestReturn && (
+                                            <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                                                <Button
+                                                    variant="outline"
+                                                    className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                                                    onClick={() => openReturnModal('return', selectedOrder.id)}
+                                                >
+                                                    Request Return
+                                                </Button>
+
+                                                <Button
+                                                    variant="outline"
+                                                    className="border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+                                                    onClick={() => openReturnModal('replacement', selectedOrder.id)}
+                                                >
+                                                    Request Replacement
+                                                </Button>
+
+                                            </div>
+                                        )}
+
+
+
 
                                     </div>
                                 </CardContent>
@@ -601,6 +685,87 @@ const Orders: React.FC = () => {
                     </Tabs>
                 </div>
             </main>
+
+            {returnModalOpen && returnType && (
+                <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
+                    <div className="bg-background rounded-xl w-full max-w-md p-6 space-y-4">
+                        <h2 className="text-xl font-semibold">
+                            {returnType === 'return' ? 'Request Return' : 'Request Replacement'}
+                        </h2>
+
+                        <p className="text-sm text-muted-foreground">
+                            Please tell us why you are requesting a {returnType}.
+                        </p>
+
+                        <textarea
+                            className="w-full border rounded-md p-3 text-sm"
+                            rows={4}
+                            placeholder="Reason (required)"
+                            value={returnReason}
+                            onChange={(e) => setReturnReason(e.target.value)}
+                        />
+
+                        <div className="flex justify-end gap-2 pt-2">
+                            <Button
+                                variant="ghost"
+                                onClick={() => setReturnModalOpen(false)}
+                            >
+                                Cancel
+                            </Button>
+
+                            <Button
+                                disabled={!returnReason.trim()}
+                                onClick={async () => {
+                                    if (!returnOrderId || !returnType) return;
+
+                                    try {
+                                        const session = await supabase.auth.getSession();
+                                        const token = session.data.session?.access_token;
+
+                                        const res = await fetch(
+                                            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/request-return`,
+                                            {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                    Authorization: `Bearer ${token}`,
+                                                },
+                                                body: JSON.stringify({
+                                                    order_id: returnOrderId,
+                                                    request_type: returnType,
+                                                    reason: returnReason,
+                                                }),
+                                            }
+                                        );
+
+                                        const text = await res.text(); // 👈 IMPORTANT
+
+                                        if (!res.ok) {
+                                            console.error('❌ Return request failed:', text);
+                                            alert(text || 'Failed to submit request');
+                                            return;
+                                        }
+
+                                        console.log('✅ Return request success:', text);
+                                        alert('Request submitted successfully');
+
+                                        setReturnModalOpen(false);
+                                        setReturnOrderId(null);
+                                        setReturnReason('');
+                                        setSelectedOrderId(null);
+                                    } catch (err) {
+                                        console.error('🔥 Network / JS error', err);
+                                        alert('Something went wrong');
+                                    }
+                                }}
+                            >
+                                Submit Request
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
 
             <Footer />
             <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />

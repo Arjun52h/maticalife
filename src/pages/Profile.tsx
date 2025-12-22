@@ -220,10 +220,6 @@ const Profile: React.FC = () => {
         if (!last) return true; // no snapshot => editable
         return (
             last.name !== form.name ||
-            last.phone !== form.phone ||
-            last.address !== form.address ||
-            last.city !== form.city ||
-            last.pincode !== form.pincode ||
             last.avatar !== form.avatar
         );
     };
@@ -451,22 +447,9 @@ const Profile: React.FC = () => {
     // ---------- Validation & Save ----------
 
     const validateBeforeSave = (): { ok: boolean; message?: string } => {
-        // Phone: allow optional leading '+' plus digits, min 6 digits typical
-        const phone = form.phone?.replace(/\s/g, '') ?? '';
-        if (phone && !/^\+?\d{6,15}$/.test(phone)) {
-            return { ok: false, message: 'Phone number appears invalid.' };
-        }
-
-        // Pincode: if provided must be 6 digits
-        if (form.pincode && !/^\d{6}$/.test(form.pincode)) {
-            return { ok: false, message: 'PIN code must be 6 digits.' };
-        }
-
-        // Name: required
         if (!form.name?.trim()) {
             return { ok: false, message: 'Full name is required.' };
         }
-
         return { ok: true };
     };
 
@@ -511,62 +494,6 @@ const Profile: React.FC = () => {
                 return;
             }
 
-            // 2) upsert default address — if we have an existing default, update it; otherwise insert new.
-            try {
-                const { data: existingAddresses, error: addrSelectErr } = await supabase
-                    .from('addresses')
-                    .select('id')
-                    .eq('user_id', user.id)
-                    .eq('is_default', true)
-                    .limit(1);
-
-                if (addrSelectErr) {
-                    console.debug('addresses select error', addrSelectErr);
-                    // not fatal
-                }
-
-                const addrPayload: any = {
-                    user_id: user.id,
-                    label: 'Home',
-                    full_name: form.name || user.name || '',
-                    phone: form.phone || null,
-                    line1: form.address || null,
-                    line2: null,
-                    city: form.city || null,
-                    state: 'N/A', // adjust if you collect state
-                    postal_code: form.pincode || null,
-                    country: 'India',
-                    is_default: true,
-                    updated_at: new Date().toISOString(),
-                };
-
-                const defaultAddr = (existingAddresses && existingAddresses[0]) ?? null;
-
-                if (defaultAddr && defaultAddr.id) {
-                    const { error: addrUpdateErr } = await supabase
-                        .from('addresses')
-                        .update(addrPayload)
-                        .eq('id', defaultAddr.id);
-
-                    if (addrUpdateErr) {
-                        console.error('addresses update error', addrUpdateErr);
-                        toast({ title: 'Partial save', description: 'Profile saved but address update failed.' });
-                    }
-                } else {
-                    const { error: addrInsertErr } = await supabase
-                        .from('addresses')
-                        .insert([addrPayload]);
-
-                    if (addrInsertErr) {
-                        console.error('addresses insert error', addrInsertErr);
-                        toast({ title: 'Partial save', description: 'Profile saved but address insert failed.' });
-                    }
-                }
-            } catch (addrEx) {
-                console.error('Address upsert exception', addrEx);
-                toast({ title: 'Partial save', description: 'Profile saved but address update failed.' });
-            }
-
             // capture previous path BEFORE updating oldAvatarPathRef
             const previousPath = oldAvatarPathRef.current; // path that existed before this save
             const newAvatarPath = profilePayload.avatar ?? null;
@@ -596,15 +523,6 @@ const Profile: React.FC = () => {
             // update preview URL to match saved avatar
             const newPreview = extractStoragePath(newProfileState.avatar) ? getPublicUrlFromPath(newProfileState.avatar!) : (newProfileState.avatar ?? null);
             setPreviewAvatarUrl(newPreview);
-
-            // set address local state to last-saved snapshot (optimistic)
-            setAddress((prev) => ({
-                ...(prev ?? {}),
-                line1: form.address || null,
-                city: form.city || null,
-                phone: form.phone || null,
-                postal_code: form.pincode || null,
-            } as AddressRow));
 
             lastSavedRef.current = { ...form };
             setIsEditing(false);
@@ -902,7 +820,7 @@ const Profile: React.FC = () => {
                                                     if (v.length > 16) v = v.slice(0, 16);
                                                     setForm((s) => ({ ...s, phone: v }));
                                                 }}
-                                                disabled={!isEditing || saving}
+                                                disabled
                                             />
                                         </div>
 
@@ -917,7 +835,7 @@ const Profile: React.FC = () => {
                                                     setForm((s) => ({ ...s, pincode: digits }));
                                                 }}
                                                 inputMode="numeric"
-                                                disabled={!isEditing || saving}
+                                                disabled
                                             />
                                         </div>
                                     </div>
@@ -926,13 +844,18 @@ const Profile: React.FC = () => {
                                         <Label htmlFor="address" className="flex items-center gap-2 text-muted-foreground">
                                             <MapPin className="w-4 h-4" /> Address
                                         </Label>
-                                        <Input id="address" placeholder="123 Main Street" value={form.address} onChange={(e) => setForm((s) => ({ ...s, address: e.target.value }))} disabled={!isEditing || saving} />
+                                        <Input id="address" placeholder="123 Main Street" value={form.address} onChange={(e) => setForm((s) => ({ ...s, address: e.target.value }))} disabled />
                                     </div>
+
+                                    <p className="text-xs text-muted-foreground">
+                                        Shipping addresses are managed from the Addresses page.
+                                    </p>
+
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <Label htmlFor="city">City</Label>
-                                            <Input id="city" placeholder="Mumbai" value={form.city} onChange={(e) => setForm((s) => ({ ...s, city: e.target.value }))} disabled={!isEditing || saving} />
+                                            <Input id="city" placeholder="Mumbai" value={form.city} onChange={(e) => setForm((s) => ({ ...s, city: e.target.value }))} disabled />
                                         </div>
                                     </div>
                                 </CardContent>
@@ -954,11 +877,27 @@ const Profile: React.FC = () => {
                                     </div>
 
                                     <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
+
                                         <div>
                                             <p className="font-medium">Default shipping address</p>
-                                            <p className="text-sm text-muted-foreground">Manage your saved addresses under Shipping (not yet implemented)</p>
+                                            {address ? (
+                                                <p className="text-sm text-muted-foreground">
+                                                    {address.line1}, {address.city} – {address.postal_code}
+                                                </p>
+                                            ) : (
+                                                <p className="text-sm text-muted-foreground">
+                                                    No default address set
+                                                </p>
+                                            )}
                                         </div>
-                                        <Button variant="outline" size="sm" onClick={() => toast({ title: 'Addresses', description: 'Address management not implemented yet.' })}>Manage</Button>
+
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => navigate('/addresses')}
+                                        >
+                                            Manage Addresses
+                                        </Button>
                                     </div>
                                 </CardContent>
                             </Card>
