@@ -19,6 +19,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   sendPasswordReset: (email: string) => Promise<boolean>;
   refreshProfile: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -201,6 +202,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+     const signInWithGoogle = useCallback(async () => {
+ 1
+  setIsLoading(true);
+  try {
+    console.log("2. Calling Supabase OAuth..."); // CHECK 2
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin,
+      },
+    });
+
+    if (error) throw error;
+    console.log("3. Supabase response data:", data); // CHECK 3
+  } catch (err: any) {
+    console.error('Google Sign-In Error:', err);
+    toast({ title: 'Login failed', description: err.message });
+  } finally {
+    setIsLoading(false);
+  }
+}, []);
+
   // manual refresh
   const refreshProfile = useCallback(async () => {
     const session = await supabase.auth.getSession();
@@ -246,7 +269,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // alias for pages that call logout()
       logout,
       sendPasswordReset,
-      refreshProfile
+      refreshProfile,
+      signInWithGoogle
     }}>
       {children}
     </AuthContext.Provider>
