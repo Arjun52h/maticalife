@@ -23,17 +23,23 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const location = useLocation();
   const redirectTo = (location.state as any)?.redirectTo || "/";
 
-  const handleGoogleSignIn = async () => {
-    if (!signInWithProvider) return;
-    setOauthLoading(true);
-    try {
-      await signInWithProvider('google');
-    } catch (err) {
-      console.error('Google OAuth error', err);
-    } finally {
-      setOauthLoading(false);
-    }
-  };
+ const handleGoogleSignIn = async () => {
+  // Use the specific function we added to your context
+  if (!auth.signInWithGoogle) {
+    console.error("signInWithGoogle is missing from context");
+    return;
+  }
+  
+  setOauthLoading(true);
+  try {
+    // Calling the function we verified in AuthContext.tsx
+    await auth.signInWithGoogle();
+  } catch (err) {
+    console.error('Google OAuth error', err);
+  } finally {
+    setOauthLoading(false);
+  }
+};
 
 
   const [formData, setFormData] = useState({
@@ -48,7 +54,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const signIn = (auth as any).signIn ?? auth.signIn;
   const signUp = (auth as any).signUp ?? auth.signUp;
   const sendPasswordReset = (auth as any).sendPasswordReset ?? auth.sendPasswordReset;
-  const signInWithProvider = (auth as any).signInWithProvider as ((p: string) => Promise<boolean>) | undefined;
+const signInWithGoogle = auth.signInWithGoogle;
   const isLoading = auth.isLoading;
 
   const [isMobile, setIsMobile] = useState<boolean>(typeof window !== 'undefined' ? window.innerWidth <= 640 : false);
