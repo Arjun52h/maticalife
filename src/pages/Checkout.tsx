@@ -56,7 +56,10 @@ const Checkout: React.FC = () => {
     const [currentStep, setCurrentStep] = useState(1);
     const [isProcessing, setIsProcessing] = useState(false);
     const [orderPlaced, setOrderPlaced] = useState(false);
-
+    // y add hue h verify pincode k liye
+    const [isServiceable, setIsServiceable] = useState(false);
+    const [checkingServiceability, setCheckingServiceability] = useState(false);
+    // yaha tak 
     const [promoCode, setPromoCode] = useState('');
     const [promoApplied, setPromoApplied] = useState(false);
     const [discount, setDiscount] = useState(0);
@@ -102,6 +105,7 @@ const Checkout: React.FC = () => {
                 resolve(true);
                 return;
             }
+            
 
             const script = document.createElement("script");
             script.src = "https://checkout.razorpay.com/v1/checkout.js";
@@ -115,141 +119,247 @@ const Checkout: React.FC = () => {
     };
 
 
-    const openRazorpay = async (orderId: string) => {
-        const loaded = await loadRazorpay();
+const openRazorpay = async (orderId: string) => {
+  const loaded = await loadRazorpay();
+  if (!loaded) {
+  toast({
+    title: "Payment Error",
+    description: "Failed to load Razorpay",
+    variant: "destructive",
+  });
+  return;
+} 
 
-        if (!loaded) {
+
+  const session = await supabase.auth.getSession();
+  const accessToken = session.data.session?.access_token;
+
+  const res = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-razorpay-order`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ order_id: orderId }),
+    }
+  );
+
+  const text = await res.text();
+console.log("Raw Razorpay API response:", text);
+
+if (!res.ok) {
+  throw new Error(text || "Server error while creating Razorpay order");
+}
+
+const data = JSON.parse(text);
+console.log("Parsed Razorpay response:", data);
+
+  if (!data?.razorpay_order_id) {
+    toast({
+      title: "Payment initialization failed",
+      description: "Razorpay order not created",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  const options = {
+    key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+    amount: data.amount,
+    currency: data.currency,
+    order_id: data.razorpay_order_id,
+    name: "Matica.life",
+
+    handler: async (response: any) => {
+      console.log("Payment Success:", response);
+
+      // VERIFY PAYMENT HERE (very important)
+      await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-razorpay-payment`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            order_id: orderId,
+            ...response,
+          }),
+        }
+      );
+
+      clearCart();
+      setOrderPlaced(true);
+      navigate("/orders");
+    },
+
+    modal: {
+      ondismiss: function () {
+        setIsProcessing(false);
+        toast({
+          title: "Payment cancelled",
+          description: "You closed the payment window",
+        });
+      },
+    },
+  };
+
+  const rzp = new (window as any).Razorpay(options);
+  rzp.open();
+};
+
+
+
+
+    // 2. Create a serviceability check function
+const checkServiceability = async (pincode: string) => {
+  setCheckingServiceability(true);
+  try {
+    const session = await supabase.auth.getSession();
+    const accessToken = session.data.session?.access_token;
+
+    const res = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delhivery-check-pincode?pincode=${pincode}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    const data = await res.json();
+    setIsServiceable(data.is_serviceable);
+         if (!data.is_serviceable) {
             toast({
-                title: "Payment failed to load",
-                description: "Please check your connection and try again",
-                variant: "destructive",
+                title: "Location Unserviceable",
+                description: "Sorry, we don't deliver to this pincode yet.",
+                variant: "destructive"
             });
-            return;
         }
+  } catch (err) {
+        setIsServiceable(false);
+  }
+  finally {
+    setCheckingServiceability(false);
+  }
+};
 
-        const session = await supabase.auth.getSession();
-        const accessToken = session.data.session?.access_token;
 
-        const res = await fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-razorpay-order`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${accessToken}`,
-                },
-                body: JSON.stringify({ order_id: orderId }),
-            }
-        );
+const handlePlaceOrder = async () => {
+  if (!user?.id) {
+    toast({
+      title: "Login required",
+      description: "Please sign in to place an order",
+      variant: "destructive",
+    });
+    return;
+  }
 
-        if (!res.ok) {
-            throw new Error("Failed to create Razorpay order");
+  if (items.length === 0) {
+    toast({ title: "Cart is empty", variant: "destructive" });
+    return;
+  }
+
+  setIsProcessing(true);
+
+  try {
+    // 1️⃣ Validate Address
+    if (!selectedAddressId) {
+      toast({
+        title: "No address selected",
+        description: "Please select a shipping address",
+        variant: "destructive",
+      });
+      setIsProcessing(false);
+      return;
+    }
+
+    const payload = items.map(item => ({
+      product_id: item.productId,
+      quantity: item.quantity,
+    }));
+
+    // 2️⃣ Create Order in Supabase
+    // This creates the record in your database first.
+    const { data: orderId, error } = await supabase.rpc(
+      "create_order_with_validation",
+      {
+        p_user_id: user.id,
+        p_items: payload,
+        p_shipping_address_id: selectedAddressId,
+        p_payment_method: paymentMethod,
+      }
+    );
+
+    if (error) throw error;
+    setOrderId(orderId);
+
+    // 3️⃣ Handle Logic Based on Payment Method
+    if (paymentMethod === "cod") {
+      // --- CASH ON DELIVERY FLOW ---
+      // For COD, we create the shipment immediately since there's no payment barrier.
+      const session = await supabase.auth.getSession();
+      const accessToken = session.data.session?.access_token;
+
+      const delhiveryRes = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delhivery-create-shipment`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            order_id: orderId,
+            address: selectedAddress,
+            items,
+          }),
         }
+      );
 
-        const data = await res.json();
+      const delhiveryData = await delhiveryRes.json();
 
-        const options = {
-            key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-            amount: data.amount,
-            currency: data.currency,
-            order_id: data.razorpay_order_id,
-            name: "Matica.life",
-            description: "Order Payment",
-            handler: (response: any) => {
-                // DO NOT trust this yet (webhook will handle real success)
-                navigate("/orders");
-            },
-            theme: {
-                color: "#8B5E3C",
-            },
-        };
+      if (delhiveryData?.waybill_number) {
+        // Store waybill in Supabase
+        await supabase
+          .from("orders")
+          .update({ waybill_number: delhiveryData.waybill_number })
+          .eq("id", orderId);
+      }
 
-        const razorpay = new (window as any).Razorpay(options);
-        razorpay.open();
-    };
+      clearCart();
+      setOrderPlaced(true);
+      
+    } else {
+      // --- ONLINE PAYMENT FLOW (Razorpay) ---
+      // We open Razorpay IMMEDIATELY. 
+      // We don't call Delhivery here because if Delhivery fails, 
+      // the user can't pay. You should trigger Delhivery from your 
+      // Razorpay Webhook or after successful payment handler.
+      
+      await openRazorpay(orderId);
+      
+      //clearCart(); 
+      // Note: setOrderPlaced(true) usually happens inside openRazorpay's success handler
+    }
 
-
-
-    const handlePlaceOrder = async () => {
-        if (!user?.id) {
-            toast({
-                title: "Login required",
-                description: "Please sign in to place an order",
-                variant: "destructive",
-            });
-            return;
-        }
-
-        if (items.length === 0) {
-            toast({ title: "Cart is empty", variant: "destructive" });
-            return;
-        }
-
-        setIsProcessing(true);
-
-        try {
-            // 1️⃣ Address
-            if (!selectedAddressId) {
-                toast({
-                    title: "No address selected",
-                    description: "Please select a shipping address",
-                    variant: "destructive",
-                });
-                return;
-            }
-
-            const payload = items.map(item => ({
-                product_id: item.productId,
-                quantity: item.quantity,
-            }));
-
-            const { data: orderId, error } = await supabase.rpc(
-                "create_order_with_validation",
-                {
-                    p_user_id: user.id,
-                    p_items: payload,
-                    p_shipping_address_id: selectedAddressId,
-                    p_payment_method: paymentMethod,
-                }
-            );
+  } catch (err) {
+    console.error("Order Error:", err);
+    const errorMessage = err instanceof Error ? err.message : "Please try again";
+    toast({
+      title: "Unable to place order",
+      description: errorMessage,
+      variant: "destructive",
+    });
+  } finally {
+    setIsProcessing(false);
+  }
+};
 
 
-            if (error) throw error;
-
-            setOrderId(orderId);
-
-            // ORDER IS CREATED — CART MUST DIE HERE
-            clearCart();
-
-            if (paymentMethod === "cod") {
-                setOrderPlaced(true);
-                return;
-            }
-
-            try {
-                await openRazorpay(orderId);
-            } catch (paymentError) {
-                console.error(paymentError);
-
-                toast({
-                    title: "Payment not completed",
-                    description: "You can retry payment from Orders page",
-                });
-
-                navigate("/orders");
-            }
-        } catch (err) {
-            console.error(err);
-
-            toast({
-                title: "Unable to place order",
-                description: "Please try again",
-                variant: "destructive",
-            });
-        } finally {
-            setIsProcessing(false);
-        }
-    };
 
 
     const steps = [
@@ -278,7 +388,14 @@ const Checkout: React.FC = () => {
             }
 
             setAddresses(data || []);
-            setSelectedAddressId(data?.[0]?.id ?? null);
+            setAddresses(data || []);
+        const defaultAddr = data?.[0];
+        setSelectedAddressId(defaultAddr?.id ?? null);
+        
+        // Check serviceability for the default address immediately
+        if (defaultAddr?.postal_code) {
+            checkServiceability(defaultAddr.postal_code);
+        }
             setLoadingAddresses(false);
         };
 
@@ -417,89 +534,86 @@ const Checkout: React.FC = () => {
                     <div className="grid lg:grid-cols-3 gap-8">
                         {/* Main Content */}
                         <div className="lg:col-span-2 space-y-6">
-                            {/* Step 1: Shipping */}
-                            {currentStep === 1 && (
-                                <div className="animate-fade-in">
-                                    <div className="bg-card rounded-2xl p-6 shadow-soft space-y-4">
-                                        <h2 className="font-display text-2xl font-semibold">Select Shipping Address</h2>
+                          {/* Step 1: Shipping */}
+{currentStep === 1 && (
+    <div className="animate-fade-in">
+        <div className="bg-card rounded-2xl p-6 shadow-soft space-y-4 border">
+            <h2 className="font-display text-2xl font-semibold">Select Shipping Address</h2>
 
-                                        {loadingAddresses ? (
-                                            <p className="text-muted-foreground">Loading addresses…</p>
-                                        ) : addresses.length === 0 ? (
-                                            <div className="text-center space-y-4">
-                                                <p className="text-muted-foreground">
-                                                    No saved addresses found.
-                                                </p>
-                                                <Button onClick={() => navigate("/addresses")}>
-                                                    Add Address
-                                                </Button>
-                                            </div>
-                                        ) : (
-                                            <RadioGroup
-                                                value={String(selectedAddressId)}
-                                                onValueChange={(v) => setSelectedAddressId(Number(v))}
-                                                className="space-y-3"
-                                            >
-                                                {addresses.map((addr) => (
-                                                    <label
-                                                        key={addr.id}
-                                                        className={`block rounded-xl border p-4 cursor-pointer transition ${selectedAddressId === addr.id
-                                                            ? "border-primary bg-primary/5"
-                                                            : "border-border hover:border-primary/50"
-                                                            }`}
-                                                    >
-                                                        <div className="flex gap-3 items-start">
-                                                            <RadioGroupItem value={String(addr.id)} />
-                                                            <div>
-                                                                <p className="font-medium">
-                                                                    {addr.full_name} · {addr.label}
-                                                                </p>
-                                                                <p className="text-sm text-muted-foreground">
-                                                                    {addr.line1}
-                                                                    {addr.line2 && `, ${addr.line2}`}
-                                                                </p>
-                                                                <p className="text-sm text-muted-foreground">
-                                                                    {addr.city}, {addr.state} – {addr.postal_code}
-                                                                </p>
-                                                                <p className="text-sm text-muted-foreground">
-                                                                    {addr.phone}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </label>
-                                                ))}
-                                            </RadioGroup>
-                                        )}
-
-                                        <div className="pt-4 border-t flex gap-3">
-                                            <Button
-                                                variant="outline"
-                                                onClick={() => navigate("/addresses")}
-                                                className="flex-1"
-                                            >
-                                                Manage Addresses
-                                            </Button>
-
-                                            <Button
-                                                className="flex-1 btn-primary"
-                                                onClick={() => {
-                                                    if (!selectedAddressId) {
-                                                        toast({
-                                                            title: "Select an address",
-                                                            description: "Please select a shipping address",
-                                                            variant: "destructive",
-                                                        });
-                                                        return;
-                                                    }
-                                                    setCurrentStep(2);
-                                                }}
-                                            >
-                                                Continue to Payment
-                                            </Button>
-                                        </div>
+            {loadingAddresses ? (
+                <p className="text-muted-foreground">Loading addresses…</p>
+            ) : (
+                <> {/* 1. Parent wrapper to group everything together */}
+                    <RadioGroup
+                        value={String(selectedAddressId)}
+                        onValueChange={(v) => {
+                            const id = Number(v);
+                            setSelectedAddressId(id);
+                            setIsServiceable(false); // Reset status when a new address is picked
+                        }}
+                        className="space-y-3"
+                    >
+                        {addresses.map((addr) => (
+                            <label key={addr.id} className={`block rounded-xl border p-4 cursor-pointer transition ${selectedAddressId === addr.id ? "border-primary bg-primary/5" : "border-border"}`}>
+                                <div className="flex gap-3 items-start">
+                                    <RadioGroupItem value={String(addr.id)} />
+                                    <div>
+                                        <p className="font-medium">{addr.full_name} · {addr.label}</p>
+                                        <p className="text-sm text-muted-foreground">{addr.line1}, {addr.postal_code}</p>
                                     </div>
                                 </div>
-                            )}
+                            </label>
+                        ))}
+                    </RadioGroup>
+
+                    {/* 2. Wrapped in IF check to remove the red error on selectedAddress */}
+                    {selectedAddress && (
+                        <div className="mt-4 space-y-3 border-t pt-4">
+                            <Button 
+                                variant="outline" 
+                                type="button"
+                                onClick={() => checkServiceability(selectedAddress.postal_code)}
+                                disabled={checkingServiceability}
+                                className="w-full h-11 border-dashed border-2 hover:border-primary"
+                            >
+                                {checkingServiceability ? (
+                                    <Clock className="w-4 h-4 animate-spin mr-2" />
+                                ) : (
+                                    <Truck className="w-4 h-4 mr-2" />
+                                )}
+                                {checkingServiceability ? "Verifying..." : "Verify Delivery for this Pincode"}
+                            </Button>
+
+                            {/* Serviceability Status Message */}
+                            <div className={`p-3 rounded-lg border flex items-center gap-3 transition-colors ${
+                                isServiceable ? 'bg-green-50 border-green-200 text-green-700' : 'bg-orange-50 border-orange-200 text-orange-700'
+                            }`}>
+                                {isServiceable ? <Check className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
+                                <span className="text-sm font-medium">
+                                    {isServiceable ? "Area is serviceable! You can proceed." : "Pincode not serviceable by Delhivery"}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+                </>
+            )}
+
+            <div className="pt-4 border-t flex gap-3">
+                <Button variant="outline" onClick={() => navigate("/addresses")} className="flex-1">
+                    Manage Addresses
+                </Button>
+                <Button 
+                    className="flex-1 btn-primary" 
+                    // This button stays locked until pincode is verified (Green)
+                    disabled={!isServiceable || checkingServiceability} 
+                    onClick={() => setCurrentStep(2)}
+                >
+                    Continue to Payment
+                </Button>
+            </div>
+        </div>
+    </div>
+)}
 
 
                             {/* Step 2: Payment */}
@@ -590,7 +704,7 @@ const Checkout: React.FC = () => {
                                             </label>
                                         </RadioGroup>
 
-                                        {paymentMethod === 'card' && (
+                                        {/* {paymentMethod === 'card' && (
                                             <div className="mt-6 pt-6 border-t border-border space-y-4 animate-fade-in">
                                                 <div className="space-y-2">
                                                     <Label>Card Number</Label>
@@ -611,7 +725,7 @@ const Checkout: React.FC = () => {
                                                     <Input placeholder="John Doe" className="h-12" />
                                                 </div>
                                             </div>
-                                        )}
+                                        )} */}
 
                                         <div className="mt-6 pt-6 border-t border-border flex gap-4">
                                             <Button

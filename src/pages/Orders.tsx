@@ -26,7 +26,7 @@ import { supabase } from '@/lib/supabaseClient';
 
 // Types matching your DB mapping + UI
 type OrderStatus = 'pending' | 'shipped' | 'delivered' | 'cancelled';
-type PaymentStatus = 'pending' | 'paid' | 'failed' | 'requires_action' | 'refunded';
+type PaymentStatus = 'pending' | 'paid' | 'failed' | 'requires_action' | 'refunded' | 'cod_pending';
 
 
 type OrderItem = {
@@ -102,6 +102,8 @@ const resolvePaymentBadge = (payment_status: PaymentStatus): UIStatus => {
             return { kind: 'payment', label: 'Paid', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle2 };
         case 'pending':
             return { kind: 'payment', label: 'Payment Pending', color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock };
+        case 'cod_pending':
+            return { kind: 'payment', label: 'Cash on Delivery', color: 'bg-blue-100 text-blue-800 border-blue-200', icon: Truck };
         case 'failed':
             return { kind: 'payment', label: 'Payment Failed', color: 'bg-red-100 text-red-800 border-red-200', icon: Package };
         case 'refunded':
