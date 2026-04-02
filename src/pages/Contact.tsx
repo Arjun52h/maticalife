@@ -15,17 +15,17 @@ const contactInfo = [
   {
     icon: MapPin,
     title: 'Visit Us',
-    details: ['123 Artisan Lane, Mumbai', 'Maharashtra 400001, India'],
+    details: ['Thakur Shree Lakshminarayan, Agra road, Hathras', 'UttarPradesh 204101, India'],
   },
   {
     icon: Phone,
     title: 'Call Us',
-    details: ['+91 98765 43210', '+91 98765 43211'],
+    details: ['+91 85020 16290'],
   },
   {
     icon: Mail,
     title: 'Email Us',
-    details: ['hello@matica.life', 'support@matica.life'],
+    details: ['support@matica.life'],
   },
   {
     icon: Clock,
@@ -123,17 +123,17 @@ const Contact: React.FC = () => {
 
                 {/* Map Placeholder */}
                 <div className="aspect-video rounded-xl overflow-hidden bg-muted">
-                  <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d241317.11609823277!2d72.74109995!3d19.08219865!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7c6306644edc1%3A0x5da4ed8f8d648c69!2sMumbai%2C%20Maharashtra!5e0!3m2!1sen!2sin!4v1234567890"
-                    width="100%"
-                    height="100%"
-                    style={{ border: 0 }}
-                    allowFullScreen
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    title="Matica.life Location"
-                  />
-                </div>
+  <iframe
+    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d241317.11609823277!2d78.05554677598198!3d27.599001934855888!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7c6306644edc1%3A0x5da4ed8f8d648c69!2s204101!5e0!3m2!1sen!2sin!4v1234567890"
+    width="100%"
+    height="100%"
+    style={{ border: 0 }}
+    allowFullScreen
+    loading="lazy"
+    referrerPolicy="no-referrer-when-downgrade"
+    title="Matica.life Location"
+  />
+</div>
               </div>
 
               {/* Contact Form */}
@@ -181,7 +181,7 @@ const Contact: React.FC = () => {
                           type="tel"
                           value={formData.phone}
                           onChange={handleChange}
-                          placeholder="+91 98765 43210"
+                          placeholder="+91 85020 16290"
                           className="h-12"
                         />
                       </div>
