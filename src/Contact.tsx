@@ -181,7 +181,7 @@ const Contact: React.FC = () => {
                           type="tel"
                           value={formData.phone}
                           onChange={handleChange}
-                          placeholder="+91 98765 43210"
+                          placeholder="+91 85020 16290"
                           className="h-12"
                         />
                       </div>
