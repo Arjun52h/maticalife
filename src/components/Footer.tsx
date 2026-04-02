@@ -166,17 +166,17 @@ const Footer: React.FC = () => {
               <li className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                 <span className="text-muted-foreground">
-                  123 Artisan Lane, Mumbai,<br />
-                  Maharashtra 400001, India
+                  Thakur Shree Lakshminarayan, Agra road, Hathras<br />
+                  UttarPradesh 204101, India
                 </span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-primary flex-shrink-0" />
-                <span className="text-muted-foreground">+91 98765 43210</span>
+                <span className="text-muted-foreground">+91 85020 16290</span>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-primary flex-shrink-0" />
-                <span className="text-muted-foreground">hello@matica.life</span>
+                <span className="text-muted-foreground">support@matica.life</span>
               </li>
             </ul>
           </div>
