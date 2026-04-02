@@ -15,17 +15,17 @@ const contactInfo = [
   {
     icon: MapPin,
     title: 'Visit Us',
-    details: ['123 Artisan Lane, Mumbai', 'Maharashtra 400001, India'],
+    details: ['Thakur Shree Lakshminarayan, Agra road, Hathras', 'UttarPradesh 204101, India'],
   },
   {
     icon: Phone,
     title: 'Call Us',
-    details: ['+91 98765 43210', '+91 98765 43211'],
+    details: ['+91 85020 16290'],
   },
   {
     icon: Mail,
     title: 'Email Us',
-    details: ['hello@matica.life', 'support@matica.life'],
+    details: ['support@matica.life'],
   },
   {
     icon: Clock,
