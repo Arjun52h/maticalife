@@ -5,7 +5,22 @@ import { Button } from '@/components/ui/button';
 
 const HeroSection: React.FC = () => {
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden hero-gradient texture-overlay pt-16 md:pt-20">
+   <section className="relative min-h-screen flex items-center overflow-hidden pt-16 md:pt-20">
+
+      {/* 🎥 VIDEO BACKGROUND */}
+<video
+  autoPlay
+  muted
+  loop
+  playsInline
+  className="absolute inset-0 w-full h-full object-cover"
+>
+  <source src="/videos/hero-bg.mp4" type="video/mp4" />
+</video>
+
+{/* 🔥 DARK OVERLAY (IMPORTANT for readability) */}
+<div className="absolute inset-0 bg-black/50" />
+      
       {/* Decorative Floating Shapes */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-72 h-72 rounded-full bg-[hsl(var(--primary)/0.05)] blur-3xl animate-float" />
