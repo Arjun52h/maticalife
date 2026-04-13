@@ -19,7 +19,7 @@ const HeroSection: React.FC = () => {
 </video>
 
 {/* 🔥 DARK OVERLAY (IMPORTANT for readability) */}
-<div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-black/80" />
+<div className="absolute inset-0 bg-gradient-to-b from-white/30 via-white/10 to-white/30" />
       
       {/* Decorative Floating Shapes */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
