@@ -103,7 +103,7 @@ const HeroSection: React.FC = () => {
                 /> */}
 
                 {/* Floating product cards */}
-                <div className="absolute -left-8 top-1/4 bg-[hsl(var(--card))] p-3 rounded-xl shadow-medium animate-float hidden md:block">
+                {/* <div className="absolute -left-8 top-1/4 bg-[hsl(var(--card))] p-3 rounded-xl shadow-medium animate-float hidden md:block">
                   <div className="flex items-center gap-3">
                     <img 
                       src="https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=100"
@@ -129,7 +129,7 @@ const HeroSection: React.FC = () => {
                       <p className="text-[hsl(var(--primary))] font-semibold">₹2,499</p>
                     </div>
                   </div>
-                </div>
+                </div> */}
 
               </div>
             </div>
