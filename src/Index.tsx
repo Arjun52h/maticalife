@@ -36,7 +36,7 @@ const Index: React.FC = () => {
   return (
     <>
        <Helmet>
-        <title>Matica.life - Handcrafted Artisan Products | Premiumly Better Home & Lifestyle</title>
+        <title>Handmade pottery products in India | Matica.life</title>
         <meta name="description" content="Discover authentic handcrafted artisan products at Matica.life." />
       </Helmet> 
 
