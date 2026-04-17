@@ -41,14 +41,12 @@ const Index: React.FC = () => {
       </Helmet>
 
       <div className="min-h-screen bg-white">
-        <Header 
+        {/* <Header 
           onOpenCart={() => setIsCartOpen(true)} 
           onOpenAuth={() => setIsAuthOpen(true)} 
-        />
+        /> */}
         
         <main>
-         
-
           <FeaturesSection />
           <CategoriesSection />
           <FeaturedProducts />
