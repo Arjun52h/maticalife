@@ -93,7 +93,7 @@ const HeroSection: React.FC = () => {
             <div className="relative z-10">
               <div className="aspect-square max-w-lg mx-auto relative">
                 {/* Gradient overlay */}
-                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[hsl(var(--primary)/0.2)] to-[hsl(var(--accent)/0.2)] animate-pulse-slow" />
+                {/* <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[hsl(var(--primary)/0.2)] to-[hsl(var(--accent)/0.2)] animate-pulse-slow" /> */}
 
                 {/* Main Image */}
                 {/* <img
