@@ -50,25 +50,25 @@ const Index: React.FC = () => {
           <HeroSection />
 
           {/* --- NEW SECTION: DELHIVERY INTEGRATION DASHBOARD --- */}
-          <section className="py-16 bg-slate-50 border-y border-slate-200">
+          {/* <section className="py-16 bg-slate-50 border-y border-slate-200">
             <div className="container mx-auto px-4 max-w-4xl">
               <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100">
                 <div className="text-center mb-10">
                   <h2 className="text-3xl font-bold text-slate-900 mb-2">Shipping Hub</h2>
                   <p className="text-slate-500">Verify delivery and manifest orders to Delhivery One</p>
-                </div>
+                </div> */}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                   {/* Step 1: Pincode Check */}
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-bold text-orange-600 uppercase tracking-widest">Step 1: Pincode Check</h3>
+                  {/* <div className="space-y-4">
+                    <h3 className="text-xs font-bold text-orange-600 uppercase tracking-widest">Step 1: Pincode Check</h3> */}
                     {/* <PincodeChecker 
                       onVerified={(status, pin) => {
                         setIsServiceable(status);
                         setVerifiedPin(pin);
                       }} 
                     /> */}
-                  </div>
+                  </div> */}
 
                   {/* Step 2: Shipping Notification */}
                   {/* <div className={`space-y-4 transition-all duration-500 ${isServiceable ? 'opacity-100' : 'opacity-40 grayscale'}`}>
@@ -84,10 +84,10 @@ const Index: React.FC = () => {
                       </p>
                     )}
                   </div> */}
-                </div>
+                {/* </div>
               </div>
             </div>
-          </section>
+          </section> */}
 
           <FeaturesSection />
           <CategoriesSection />
