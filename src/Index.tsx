@@ -35,16 +35,16 @@ const Index: React.FC = () => {
 
   return (
     <>
-      <Helmet>
+      {/* <Helmet>
         <title>Matica.life - Handcrafted Artisan Products | Premiumly Better Home & Lifestyle</title>
         <meta name="description" content="Discover authentic handcrafted artisan products at Matica.life." />
-      </Helmet>
+      </Helmet> */}
 
       <div className="min-h-screen bg-white">
-        {/* <Header 
+         <Header 
           onOpenCart={() => setIsCartOpen(true)} 
           onOpenAuth={() => setIsAuthOpen(true)} 
-        /> */}
+        /> 
         
         <main>
           <FeaturesSection />
