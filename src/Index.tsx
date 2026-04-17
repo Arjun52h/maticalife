@@ -47,47 +47,7 @@ const Index: React.FC = () => {
         />
         
         <main>
-          <HeroSection />
-
-          {/* --- NEW SECTION: DELHIVERY INTEGRATION DASHBOARD --- */}
-          {/* <section className="py-16 bg-slate-50 border-y border-slate-200">
-            <div className="container mx-auto px-4 max-w-4xl">
-              <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100">
-                <div className="text-center mb-10">
-                  <h2 className="text-3xl font-bold text-slate-900 mb-2">Shipping Hub</h2>
-                  <p className="text-slate-500">Verify delivery and manifest orders to Delhivery One</p>
-                </div> */}
-
-                {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                  {/* Step 1: Pincode Check */}
-                  {/* <div className="space-y-4">
-                    <h3 className="text-xs font-bold text-orange-600 uppercase tracking-widest">Step 1: Pincode Check</h3> */}
-                    {/* <PincodeChecker 
-                      onVerified={(status, pin) => {
-                        setIsServiceable(status);
-                        setVerifiedPin(pin);
-                      }} 
-                    /> */}
-                  </div> */}
-
-                  {/* Step 2: Shipping Notification */}
-                  {/* <div className={`space-y-4 transition-all duration-500 ${isServiceable ? 'opacity-100' : 'opacity-40 grayscale'}`}>
-                    <h3 className="text-xs font-bold text-orange-600 uppercase tracking-widest">Step 2: Manifest to Dashboard</h3>
-                    <ShipButton 
-                      {...testOrder}
-                      pincode={verifiedPin}
-                      disabled={!isServiceable}
-                    />
-                    {!isServiceable && (
-                      <p className="text-xs text-slate-400 italic font-medium">
-                        * Verify a serviceable pincode to unlock shipping.
-                      </p>
-                    )}
-                  </div> */}
-                {/* </div>
-              </div>
-            </div>
-          </section> */}
+         
 
           <FeaturesSection />
           <CategoriesSection />
