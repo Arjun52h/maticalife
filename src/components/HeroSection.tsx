@@ -74,18 +74,18 @@ const HeroSection: React.FC = () => {
             </div>
 
             {/* Stats */}
-            <div className="flex gap-8 justify-center lg:justify-start pt-8 animate-fade-in" style={{ animationDelay: '0.4s' }}>
+            {/* <div className="flex gap-8 justify-center lg:justify-start pt-8 animate-fade-in" style={{ animationDelay: '0.4s' }}>
               {[
-                { value: '500+', label: 'Artisans' },
-                { value: '10K+', label: 'Products' },
-                { value: '50K+', label: 'Happy Customers' },
+                // { value: '500+', label: 'Artisans' },
+                // { value: '10K+', label: 'Products' },
+                // { value: '50K+', label: 'Happy Customers' },
               ].map((stat) => (
                 <div key={stat.label} className="text-center">
                   <p className="font-display text-3xl font-bold text-[hsl(var(--primary))]">{stat.value}</p>
                   <p className="text-sm text-[hsl(var(--muted-foreground))]">{stat.label}</p>
                 </div>
               ))}
-            </div>
+            </div> */}
           </div>
 
           {/* Hero Image */}
@@ -96,11 +96,11 @@ const HeroSection: React.FC = () => {
                 <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[hsl(var(--primary)/0.2)] to-[hsl(var(--accent)/0.2)] animate-pulse-slow" />
 
                 {/* Main Image */}
-                <img
+                {/* <img
                   src="https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=800"
                   alt="Handcrafted Artisan Products"
                   className="relative z-10 w-full h-full object-cover rounded-3xl shadow-strong"
-                />
+                /> */}
 
                 {/* Floating product cards */}
                 <div className="absolute -left-8 top-1/4 bg-[hsl(var(--card))] p-3 rounded-xl shadow-medium animate-float hidden md:block">
