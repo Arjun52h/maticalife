@@ -58,33 +58,7 @@ const Index: React.FC = () => {
                   <p className="text-slate-500">Verify delivery and manifest orders to Delhivery One</p>
                 </div>
 
-                {/*<div className="grid grid-cols-1 md:grid-cols-2 gap-12">
               
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-bold text-orange-600 uppercase tracking-widest">Step 1: Pincode Check</h3>
-                     <PincodeChecker 
-                      onVerified={(status, pin) => {
-                        setIsServiceable(status);
-                        setVerifiedPin(pin);
-                      }} 
-                    /> 
-                  </div>*/}
-
-                  {/* Step 2: Shipping Notification */}
-                  {/* <div className={`space-y-4 transition-all duration-500 ${isServiceable ? 'opacity-100' : 'opacity-40 grayscale'}`}>
-                    <h3 className="text-xs font-bold text-orange-600 uppercase tracking-widest">Step 2: Manifest to Dashboard</h3>
-                    <ShipButton 
-                      {...testOrder}
-                      pincode={verifiedPin}
-                      disabled={!isServiceable}
-                    />
-                    {!isServiceable && (
-                      <p className="text-xs text-slate-400 italic font-medium">
-                        * Verify a serviceable pincode to unlock shipping.
-                      </p>
-                    )}
-                  </div> */}
-                </div>
               </div>
             </div>
           </section>
