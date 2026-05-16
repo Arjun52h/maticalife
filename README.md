@@ -1,73 +1,205 @@
-# React + TypeScript + Vite
+# 🧵 Matica.life — Modern Commerce Platform
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Matica.life is a modern, full-stack ecommerce platform focused on clean UX, reliable order flows, and scalable backend architecture.
+It is built with a **production-first mindset** — not demos, not templates.
 
-Currently, two official plugins are available:
+This repository contains the frontend application powering checkout, orders, authentication, and user flows.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## ✨ Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 🛒 Commerce
 
-## Expanding the ESLint configuration
+* Cart management with persistent state
+* Multi-step checkout (Shipping → Payment → Confirmation)
+* Promo code support
+* Order confirmation & tracking
+* Empty-state UX (cart, orders)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 📦 Orders
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+* Order history with filters (pending, shipped, delivered)
+* Detailed order view
+* Visual order status timeline
+* Cancelled order handling (archived state)
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### 👤 Authentication
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+* Email-based authentication
+* Auth-gated routes (orders, checkout)
+* Modal-based login/signup flow
+
+### 🧾 Data Integrity
+
+* Server-side order validation
+* Atomic order creation via Supabase RPC
+* Address persistence with default address handling
+
+---
+
+## 🧠 Tech Stack
+
+### Frontend
+
+* **React + TypeScript**
+* **React Router**
+* **Tailwind CSS**
+* **shadcn/ui**
+* **Lucide Icons**
+* **React Helmet (SEO)**
+
+### Backend / Services
+
+* **Supabase**
+
+  * PostgreSQL
+  * Auth
+  * RPC functions
+* Secure server-side order creation
+* Relational data modeling (orders, order_items, products, addresses)
+
+---
+
+## 📁 Project Structure (Simplified)
+
+```txt
+src/
+├─ components/
+│  ├─ Header
+│  ├─ Footer
+│  ├─ CartDrawer
+│  ├─ AuthModal
+│
+├─ context/
+│  ├─ AuthContext
+│  ├─ CartContext
+│
+├─ pages/
+│  ├─ Checkout.tsx
+│  ├─ Orders.tsx
+│
+├─ lib/
+│  ├─ supabaseClient.ts
+│
+├─ hooks/
+│  ├─ use-toast.ts
+│
+└─ ui/
+   ├─ button
+   ├─ card
+   ├─ tabs
+   ├─ badge
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🔄 Checkout Flow
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+1. **Shipping**
+
+   * Address capture
+   * Default address loading
+2. **Payment**
+
+   * Card / UPI / Netbanking / COD
+   * Method stored with order
+3. **Confirmation**
+
+   * Order summary
+   * Server-validated order placement
+   * Cart cleared only on success
+
+Order creation is handled via a **Supabase RPC** to ensure:
+
+* Stock validation
+* Atomic inserts
+* No client-side tampering
+
+---
+
+## 📊 Order Lifecycle
+
+Order statuses currently supported:
+
+* `pending` — order placed
+* `paid` — payment confirmed
+* `shipped` — handed to courier
+* `delivered` — completed
+* `cancelled` — archived state
+
+Cancelled orders:
+
+* Remain visible under **All Orders**
+* Do not progress through delivery stages
+* Are treated as terminal state
+
+---
+
+## 🧪 Error Handling & UX
+
+* Graceful empty states (cart, orders)
+* Loading skeletons
+* Non-blocking product metadata fetch
+* Toast-based feedback for all critical actions
+* Defensive UI against partial data
+
+---
+
+## 🛠 Environment Setup
+
+### Prerequisites
+
+* Node.js ≥ 18
+* npm / pnpm / yarn
+* Supabase project
+
+### Environment Variables
+
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_anon_key
 ```
+
+### Install & Run
+
+```bash
+npm install
+npm run dev
+```
+
+---
+
+## 🔐 Security Notes
+
+* Sensitive operations (order creation) are **never trusted to the client**
+* Supabase Row Level Security (RLS) is assumed enabled
+* User-specific data is always filtered by `user_id`
+
+---
+
+## 🚧 Roadmap (Intentional, Not Promises)
+
+* Refund & cancellation flows
+* Shipment tracking integration
+* Address book UI
+* Admin order dashboard
+* Email & WhatsApp notifications
+
+---
+
+## 🧩 Design Philosophy
+
+* UX > clever abstractions
+* Empty states matter
+* End-states should feel intentional
+* Production realism over demo polish
+
+This project is built to **scale forward**, not to impress in screenshots.
+
+---
+
+## 📜 License
+
+Private / Proprietary
+All rights reserved.
