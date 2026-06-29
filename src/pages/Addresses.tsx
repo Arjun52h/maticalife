@@ -295,7 +295,7 @@ const Addresses: React.FC = () => {
                             </select>
                         </div>
 
-                        {(['full_name', 'phone', 'line1', 'city', 'state', 'postal_code'] as const).map(
+                         {/* /* {(['full_name', 'phone', 'line1', 'city', 'state', 'postal_code'] as const).map(
                             (field) => (
                                 <div key={field}>
                                     <Label>{field.replace('_', ' ').toUpperCase()}</Label>
@@ -305,7 +305,45 @@ const Addresses: React.FC = () => {
                                     />
                                 </div>
                             ),
-                        )}
+                        )}  */ */}
+                        <div>
+                                <Label>Full Name</Label>
+                                <Input
+                                    value={form.full_name}
+                                    onChange={(e) =>
+                                        setForm((s) => ({
+                                            ...s,
+                                            full_name: e.target.value,
+                                        }))
+                                    }
+                                />
+                            </div>
+                            
+                            <div>
+                                <Label>Phone Number</Label>
+                                <Input
+                                    value={form.phone}
+                                    onChange={(e) =>
+                                        setForm((s) => ({
+                                            ...s,
+                                            phone: e.target.value,
+                                        }))
+                                    }
+                                />
+                            </div>
+                            
+                            <div>
+                                <Label>Address</Label>
+                                <Input
+                                    value={form.line1}
+                                    onChange={(e) =>
+                                        setForm((s) => ({
+                                            ...s,
+                                            line1: e.target.value,
+                                        }))
+                                    }
+                                />
+                            </div>
 
                         <div className="flex gap-2">
                             <Button onClick={handleSave}>Save</Button>
