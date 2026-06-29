@@ -295,6 +295,7 @@ const Addresses: React.FC = () => {
                             </select>
                         </div>
 
+                        {/* TODO: Replace dynamic fields with custom address form */}
                          {/* /* {(['full_name', 'phone', 'line1', 'city', 'state', 'postal_code'] as const).map(
                             (field) => (
                                 <div key={field}>
