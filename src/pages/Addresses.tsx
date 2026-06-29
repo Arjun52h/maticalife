@@ -449,7 +449,17 @@ const Addresses: React.FC = () => {
                         </div>
 
                         <div className="flex gap-2">
-                            <Button onClick={handleSave}>Save</Button>
+                            <Button
+                                onClick={handleSave}
+                                disabled={
+                                    pinLoading ||
+                                    !!pinError ||
+                                    !form.city ||
+                                    !form.state
+                                }
+                            >
+                                {pinLoading ? "Verifying PIN..." : "Save"}
+                            </Button>
                             {editing && (
                                 <Button
                                     variant="outline"
