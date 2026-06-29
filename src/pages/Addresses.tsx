@@ -51,6 +51,8 @@ const Addresses: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState<AddressRow | null>(null);
     const [form, setForm] = useState(emptyForm);
+    const [pinLoading, setPinLoading] = useState(false);
+    const [pinError, setPinError] = useState("");
 
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -88,6 +90,56 @@ const Addresses: React.FC = () => {
         loadAddresses();
     }, [isAuthenticated, user?.id]);
 
+
+
+
+    const lookupPincode = async (pin: string) => {
+    if (pin.length !== 6) return;
+
+    setPinLoading(true);
+    setPinError("");
+
+    try {
+        const response = await fetch(
+            `https://api.postalpincode.in/pincode/${pin}`
+        );
+
+        const data = await response.json();
+
+        if (
+            data[0].Status === "Success" &&
+            data[0].PostOffice &&
+            data[0].PostOffice.length > 0
+        ) {
+            const office = data[0].PostOffice[0];
+
+            setForm((prev) => ({
+                ...prev,
+                city: office.District,
+                state: office.State,
+                postal_code: pin,
+            }));
+        } else {
+            setPinError("Invalid PIN Code");
+
+            setForm((prev) => ({
+                ...prev,
+                city: "",
+                state: "",
+            }));
+        }
+    } catch (err) {
+        setPinError("Unable to verify PIN.");
+
+        setForm((prev) => ({
+            ...prev,
+            city: "",
+            state: "",
+        }));
+    }
+
+    setPinLoading(false);
+};
     // ---------------- Save address ----------------
 
     const handleSave = async () => {
@@ -295,18 +347,7 @@ const Addresses: React.FC = () => {
                             </select>
                         </div>
 
-                        {/* TODO: Replace dynamic fields with custom address form */}
-                         {/* /* {(['full_name', 'phone', 'line1', 'city', 'state', 'postal_code'] as const).map(
-                            (field) => (
-                                <div key={field}>
-                                    <Label>{field.replace('_', ' ').toUpperCase()}</Label>
-                                    <Input
-                                        value={(form as any)[field]}
-                                        onChange={(e) => setForm((s) => ({ ...s, [field]: e.target.value }))}
-                                    />
-                                </div>
-                            ),
-                        )}  */ */}
+                
                         <div>
                                 <Label>Full Name</Label>
                                 <Input
@@ -345,6 +386,49 @@ const Addresses: React.FC = () => {
                                     }
                                 />
                             </div>
+                        <div>
+                            <Label>PIN Code</Label>
+                            <Input
+                                value={form.postal_code}
+                                maxLength={6}
+                                inputMode="numeric"
+                                placeholder="302031"
+                                onChange={(e) => {
+                                    const pin = e.target.value.replace(/\D/g, "");
+                        
+                                    setForm((prev) => ({
+                                        ...prev,
+                                        postal_code: pin,
+                                    }));
+                        
+                                    if (pin.length === 6) {
+                                        lookupPincode(pin);
+                                    }
+                        
+                                    if (pin.length < 6) {
+                                        setPinError("");
+                                        setForm((prev) => ({
+                                            ...prev,
+                                            postal_code: pin,
+                                            city: "",
+                                            state: "",
+                                        }));
+                                    }
+                                }}
+                            />
+                        
+                            {pinLoading && (
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Looking up PIN...
+                                </p>
+                            )}
+                        
+                            {pinError && (
+                                <p className="text-sm text-red-500 mt-1">
+                                    {pinError}
+                                </p>
+                            )}
+                        </div>
 
                         <div className="flex gap-2">
                             <Button onClick={handleSave}>Save</Button>
