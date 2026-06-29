@@ -140,6 +140,24 @@ const Addresses: React.FC = () => {
 
     setPinLoading(false);
 };
+
+    <div>
+        <Label>City</Label>
+        <Input
+            value={form.city}
+            readOnly
+            placeholder="Automatically filled"
+        />
+    </div>
+
+    <div>
+        <Label>State</Label>
+        <Input
+            value={form.state}
+            readOnly
+            placeholder="Automatically filled"
+        />
+    </div>
     // ---------------- Save address ----------------
 
     const handleSave = async () => {
