@@ -175,6 +175,8 @@ console.log("Parsed Razorpay response:", data);
     handler: async (response: any) => {
       console.log("Payment Success:", response);
 
+        alert(JSON.stringify(response));
+
       // VERIFY PAYMENT HERE (very important)
       await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-razorpay-payment`,
