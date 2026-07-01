@@ -178,20 +178,22 @@ console.log("Parsed Razorpay response:", data);
         alert(JSON.stringify(response));
 
       // VERIFY PAYMENT HERE (very important)
-      await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-razorpay-payment`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            order_id: orderId,
-            ...response,
-          }),
-        }
-      );
+    const res = await fetch(
+  `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-razorpay-payment`,
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      order_id: orderId,
+      ...response,
+    }),
+  }
+);
+
+console.log("Fetch status:", res.status);
 
       clearCart();
       setOrderPlaced(true);
